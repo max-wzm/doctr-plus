@@ -45,12 +45,18 @@ def log(content):
 
 
 def setup_data(args):
-    t_UVDoc_data = QbDataset(
+    dataset_cls_dict = {
+        "mixed": MixedDataset,
+        "uvdoc": UVDocDataset,
+        "qbdoc": QbDataset, 
+    }
+    data_cls = dataset_cls_dict[args.data_to_use]
+    t_UVDoc_data = data_cls(
         appearance_augmentation=args.appearance_augmentation,
         geometric_augmentations=args.geometric_augmentationsUVDoc,
         split="train"
     )
-    v_UVDoc_data = QbDataset(split="val")
+    v_UVDoc_data = data_cls(split="val")
     train_loader = DataLoader(
         dataset=t_UVDoc_data,
         batch_size=args.batch_size,
@@ -279,8 +285,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data_to_use",
         type=str,
-        default="both",
-        choices=["both", "doc3d"],
+        default="mixed",
+        choices=["mixed", "uvdoc"],
         help="Dataset to use for training, either 'both' for Doc3D and UVDoc, or 'doc3d' for Doc3D only.",
     )
     parser.add_argument(
