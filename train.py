@@ -286,7 +286,7 @@ if __name__ == "__main__":
         "--data_to_use",
         type=str,
         default="mixed",
-        choices=["mixed", "uvdoc"],
+        choices=["mixed", "uvdoc", "qbdoc"],
         help="Dataset to use for training, either 'both' for Doc3D and UVDoc, or 'doc3d' for Doc3D only.",
     )
     parser.add_argument(
@@ -377,7 +377,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--project",
-        type=int,
+        type=str,
         default="test_doctr++",
         help="Number of workers to use for the dataloaders.",
     )
