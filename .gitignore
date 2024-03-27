@@ -1,2 +1,7 @@
 data/**
 .cos.conf
+wandb/**
+models/**
+**/__pycache__/**
+log/**
+.vscode/**
