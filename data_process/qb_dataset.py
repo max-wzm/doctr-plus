@@ -55,7 +55,7 @@ class QbDataset(BaseDataset):
         geometric_augmentations=[],
         grid_size=GRID_SIZE,
         split="train",
-        train_ratio=0.5,
+        train_ratio=0.7,
     ) -> None:
         super().__init__(
             data_path=data_path,
