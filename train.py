@@ -208,7 +208,7 @@ def main_worker(args):
                 img_pred_sample = (
                     pred_img_dw.detach().cpu().numpy()[0].transpose(1, 2, 0)
                 )
-                image = wandb.Image(img_sample, caption=f"epoch{epoch}_before")
+                image = wandb.Image(img_sample, caption=f"ep{epoch}_before")
                 image_dw = wandb.Image(img_dw_sample, caption=f"after_gt")
                 image_pred = wandb.Image(img_pred_sample, caption=f"after_pred")
                 wandb.log({"examples": [image, image_dw, image_pred]})
