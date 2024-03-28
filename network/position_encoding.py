@@ -128,5 +128,5 @@ def set_cuda_id(id):
     global CUDA_ID
     CUDA_ID = id
 
-def get_cuda_id(id):
+def get_cuda_id():
     return CUDA_ID
