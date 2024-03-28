@@ -178,7 +178,7 @@ class TransDecoder(nn.Module):
 
     def forward(self, imgf, query_embed):
         pos = self.position_embedding(
-            torch.ones(imgf.shape[0], imgf.shape[2], imgf.shape[3]).bool().cuda()
+            torch.ones(imgf.shape[0], imgf.shape[2], imgf.shape[3]).bool().cuda(1)
         )  # torch.Size([1, 128, 36, 36])
 
         bs, c, h, w = imgf.shape
@@ -202,7 +202,7 @@ class TransEncoder(nn.Module):
 
     def forward(self, imgf):
         pos = self.position_embedding(
-            torch.ones(imgf.shape[0], imgf.shape[2], imgf.shape[3]).bool().cuda()
+            torch.ones(imgf.shape[0], imgf.shape[2], imgf.shape[3]).bool().cuda(1)
         )  # torch.Size([1, 128, 36, 36])
         bs, c, h, w = imgf.shape
         imgf = imgf.flatten(2).permute(2, 0, 1)
