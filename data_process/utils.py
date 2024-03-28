@@ -67,10 +67,10 @@ def crop_image_tight(img, grid2D, cropped_box):
     cy1 = random.randint(0, max(s - 3, 1))
     cy2 = random.randint(0, max(s - 3, 1)) + 1
 
-    top = max(0, miny + random.randint(0, 10))
-    bot = min(448, maxy + random.randint(-10, 0))
-    left = max(0, minx + random.randint(0, 10))
-    right = min(448, maxx + random.randint(-10, 0))
+    top = max(0, miny + random.randint(-10, 10))
+    bot = min(448, maxy + random.randint(-10, 10))
+    left = max(0, minx + random.randint(-10, 10))
+    right = min(448, maxx + random.randint(-10, 10))
     return (top, bot, left, right)
 
 
