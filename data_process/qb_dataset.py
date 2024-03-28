@@ -79,6 +79,7 @@ class QbDataset(BaseDataset):
             self.all_samples = self.all_samples[:train_ends]
         if split == "val":
             self.all_samples = self.all_samples[train_ends:]
+            self.all_samples = self.all_samples[:5000]
 
     def transform_image(self, img_RGB, grid2D):
         """
