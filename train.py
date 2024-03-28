@@ -12,6 +12,7 @@ from data_process.qb_dataset import QbDataset
 from data_process.utils import get_unwarp, tensor_unwarping
 from data_process.uvdoc_dataset import UVDocDataset
 from network.core_net import GeoTr
+from network.position_encoding import CUDA_ID, set_cuda_id
 
 os.environ["WANDB_API_KEY"] = "7974567f16cc72e73931e4bfb12c157156ab7109"
 gamma_w = 0.0
@@ -389,7 +390,7 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-
+    set_cuda_id(args.id)
     wandb.init(
         project=args.project,
         config={
