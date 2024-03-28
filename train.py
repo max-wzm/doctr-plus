@@ -107,7 +107,7 @@ def update_learning_rate(scheduler, optimizer):
 
 def main_worker(args):
     train_loader, val_loader = setup_data(args)
-    device = torch.device("cuda:0")
+    device = torch.device(f"cuda:{args.id}")
 
     net = GeoTr()
     net.to(device)
@@ -379,6 +379,12 @@ if __name__ == "__main__":
         "--project",
         type=str,
         default="test_doctr++",
+        help="Number of workers to use for the dataloaders.",
+    )
+    parser.add_argument(
+        "--id",
+        type=int,
+        default=0,
         help="Number of workers to use for the dataloaders.",
     )
 
