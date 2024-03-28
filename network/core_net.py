@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from network.extractor import BasicEncoder
-from network.position_encoding import CUDA_ID, build_position_encoding
+from network.position_encoding import build_position_encoding, get_cuda_id
 from torch import Tensor, nn
 
 
@@ -178,7 +178,7 @@ class TransDecoder(nn.Module):
 
     def forward(self, imgf, query_embed):
         pos = self.position_embedding(
-            torch.ones(imgf.shape[0], imgf.shape[2], imgf.shape[3]).bool().cuda(CUDA_ID)
+            torch.ones(imgf.shape[0], imgf.shape[2], imgf.shape[3]).bool().cuda(get_cuda_id())
         )  # torch.Size([1, 128, 36, 36])
 
         bs, c, h, w = imgf.shape
@@ -202,7 +202,7 @@ class TransEncoder(nn.Module):
 
     def forward(self, imgf):
         pos = self.position_embedding(
-            torch.ones(imgf.shape[0], imgf.shape[2], imgf.shape[3]).bool().cuda(CUDA_ID)
+            torch.ones(imgf.shape[0], imgf.shape[2], imgf.shape[3]).bool().cuda(get_cuda_id())
         )  # torch.Size([1, 128, 36, 36])
         bs, c, h, w = imgf.shape
         imgf = imgf.flatten(2).permute(2, 0, 1)

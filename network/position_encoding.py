@@ -127,3 +127,6 @@ def build_position_encoding(hidden_dim=512, position_embedding="sine"):
 def set_cuda_id(id):
     global CUDA_ID
     CUDA_ID = id
+
+def get_cuda_id(id):
+    return CUDA_ID
