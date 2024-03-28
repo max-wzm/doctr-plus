@@ -76,6 +76,57 @@ def setup_data(args):
     return train_loader, val_loader
 
 
+def setup_data_v1(args):
+    t_UVDoc_data = QbDataset(
+        appearance_augmentation=args.appearance_augmentation,
+        geometric_augmentations=args.geometric_augmentationsUVDoc,
+        split="train"
+    )
+    v_UVDoc_data = MixedDataset(split="val")
+    train_loader = DataLoader(
+        dataset=t_UVDoc_data,
+        batch_size=args.batch_size,
+        num_workers=args.num_workers,
+        shuffle=True,
+        pin_memory=True,
+    )
+    val_loader = DataLoader(
+        dataset=v_UVDoc_data,
+        batch_size=args.batch_size,
+        num_workers=args.num_workers,
+        shuffle=True,
+        pin_memory=True,
+    )
+
+    return train_loader, val_loader
+
+
+def setup_data_v2(args):
+    data_cls = UVDocDataset[args.data_to_use]
+    t_UVDoc_data = data_cls(
+        appearance_augmentation=args.appearance_augmentation,
+        geometric_augmentations=args.geometric_augmentationsUVDoc,
+        split="train"
+    )
+    v_UVDoc_data = MixedDataset(split="val")
+    train_loader = DataLoader(
+        dataset=t_UVDoc_data,
+        batch_size=args.batch_size,
+        num_workers=args.num_workers,
+        shuffle=True,
+        pin_memory=True,
+    )
+    val_loader = DataLoader(
+        dataset=v_UVDoc_data,
+        batch_size=args.batch_size,
+        num_workers=args.num_workers,
+        shuffle=True,
+        pin_memory=True,
+    )
+
+    return train_loader, val_loader
+
+
 def get_lr_scheduler(optimizer, args, epoch_start):
     """Return a learning rate scheduler
     Parameters:
@@ -107,7 +158,7 @@ def update_learning_rate(scheduler, optimizer):
 
 
 def main_worker(args):
-    train_loader, val_loader = setup_data(args)
+    train_loader, val_loader = setup_data_v1(args)
     device = torch.device(f"cuda:{args.id}")
 
     net = GeoTr()
@@ -174,6 +225,9 @@ def main_worker(args):
 
     for epoch in range(epoch_start, args.n_epochs + args.n_epochs_decay + 1):
         log(f"---- EPOCH {epoch} ----")
+        if epoch == 20:
+            train_loader, val_loader = setup_data_v2(args)
+
         if epoch >= args.ep_gamma_start:
             gamma_w = args.gamma_w
             log(f"at epoch {epoch}, gamma_w changed to {gamma_w}")
