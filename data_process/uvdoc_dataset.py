@@ -121,7 +121,8 @@ class UVDocDataset(BaseDataset):
         with h5.File(grid2D_path, "r") as file:
             grid2D = np.array(file["grid2d"][:].T.transpose(2, 0, 1))
         # print(grid2D_.shape) # 2, 89, 61
-        img_RGB = cv2.cvtColor(cv2.imread(img_path), cv2.COLOR_RGB2BGR)[:, :, ::-1]
+
+        img_RGB = cv2.imread(img_path)
         img_RGB, grid2D = self.transform_image(img_RGB, grid2D)
 
         h, w, _ = img_RGB.shape

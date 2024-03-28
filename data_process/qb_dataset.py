@@ -110,7 +110,8 @@ class QbDataset(BaseDataset):
         sample_id = self.all_samples[index]
         img_path = pjoin(self.dataroot, "img", f"{sample_id}.jpg")
         bm_path = pjoin(self.dataroot, "bm", f"{sample_id}.mat")
-        img_RGB = cv2.cvtColor(cv2.imread(img_path), cv2.COLOR_BGR2RGB)[:, :, ::-1]
+
+        img_RGB = cv2.imread(img_path)
         bm = h5.loadmat(bm_path)["bm"].transpose(2, 0, 1)
 
         img_RGB, bm = self.transform_image(img_RGB, bm)
