@@ -225,15 +225,15 @@ def basic_worker(args):
     log_file_name = os.path.join(args.logdir, experiment_name + ".log")
     global logger
     logger = get_logger(log_file_name)
-
+    
     dist.init_process_group("nccl")
-    rank = dist.get_rank() + 4
+    rank = dist.get_rank()
+    logger.info(f"Start running dist_worker on rank {rank}")
     world_size = dist.get_world_size()
     device = torch.device(f"cuda:{rank}")
     torch.cuda.set_device(rank)
 
-    logger.info(f"Start running dist_worker on rank {rank}")
-
+    
     train_loader, val_loader, train_sampler, val_sampler = setup_data(args)
     net = GeoTr().to(device)
     optimizer = torch.optim.Adam(
@@ -286,7 +286,7 @@ def basic_worker(args):
         wandb.log({"train_mse": train_mse})
         wandb.log({"val_mse": val_mse})
         
-        if rank == 4 and val_mse < best_val_mse or epoch == args.n_epochs + args.n_epochs_decay:
+        if rank == 0 and val_mse < best_val_mse or epoch == args.n_epochs + args.n_epochs_decay:
             best_val_mse = val_mse
             # save
             state = {
