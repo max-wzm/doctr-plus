@@ -298,8 +298,7 @@ def basic_worker(args):
             if not os.path.exists(dir):
                 os.makedirs(dir)
             model_path = (
-                dir + 
-                + f"dist_ep_{epoch + 1}_{val_mse:.5f}_{train_mse:.5f}_best_model.pkl"
+                dir + f"dist_ep_{epoch + 1}_{val_mse:.5f}_{train_mse:.5f}_best_model.pkl"
             )
             torch.save(state, model_path)
         dist.barrier()
