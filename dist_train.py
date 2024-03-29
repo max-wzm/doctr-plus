@@ -294,9 +294,12 @@ def basic_worker(args):
                 "model_state": net.state_dict(),
                 "optimizer_state": optimizer.state_dict(),
             }
+            dir = "models/" + current_time + "/"
+            if not os.path.exists(dir):
+                os.makedirs(dir)
             model_path = (
-                "models/"
-                + f"dist_{current_time}_ep_{epoch + 1}_{val_mse:.5f}_{train_mse:.5f}_best_model.pkl"
+                dir + 
+                + f"dist_ep_{epoch + 1}_{val_mse:.5f}_{train_mse:.5f}_best_model.pkl"
             )
             torch.save(state, model_path)
         dist.barrier()
