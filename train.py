@@ -168,7 +168,7 @@ def load_model(path, net, optimizer, device):
 
 
 def main_worker(args):
-    train_loader, val_loader = setup_data_v1(args)
+    train_loader, val_loader = setup_data(args)
     device = torch.device(f"cuda:{args.id}")
     torch.cuda.set_device(args.id)
 
@@ -228,8 +228,8 @@ def main_worker(args):
 
     for epoch in range(epoch_start, args.n_epochs + args.n_epochs_decay + 1):
         log(f"---- EPOCH {epoch} ----")
-        if epoch == 20:
-            train_loader, val_loader = setup_data_v2(args)
+        # if epoch == 20:
+        #     train_loader, val_loader = setup_data_v2(args)
 
         if epoch >= args.ep_gamma_start:
             gamma_w = args.gamma_w
