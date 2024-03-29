@@ -422,6 +422,12 @@ if __name__ == "__main__":
         help="Number of workers to use for the dataloaders.",
     )
     parser.add_argument(
+        "--group",
+        type=str,
+        default="DDP",
+        help="Number of workers to use for the dataloaders.",
+    )
+    parser.add_argument(
         "--id",
         type=int,
         default=0,
@@ -434,7 +440,7 @@ if __name__ == "__main__":
 
     wandb.init(
         project=args.project,
-        group="DDP",
+        group=args.group,
         config={
             "learning_rate": args.lr,
             "epochs": args.n_epochs + args.n_epochs_decay,
