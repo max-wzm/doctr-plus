@@ -286,7 +286,7 @@ def basic_worker(args):
         wandb.log({"train_mse": train_mse})
         wandb.log({"val_mse": val_mse})
         
-        if rank == 0 and val_mse < best_val_mse or epoch == args.n_epochs + args.n_epochs_decay:
+        if rank == 4 and val_mse < best_val_mse or epoch == args.n_epochs + args.n_epochs_decay:
             best_val_mse = val_mse
             # save
             state = {
