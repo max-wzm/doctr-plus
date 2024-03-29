@@ -8,7 +8,6 @@ from typing import List, Optional
 import torch
 from torch import Tensor, nn
 
-CUDA_ID = 0
 
 class NestedTensor(object):
     def __init__(self, tensors, mask: Optional[Tensor]):
@@ -60,7 +59,7 @@ class PositionEmbeddingSine(nn.Module):
             y_embed = y_embed / (y_embed[:, -1:, :] + eps) * self.scale
             x_embed = x_embed / (x_embed[:, :, -1:] + eps) * self.scale
 
-        dim_t = torch.arange(self.num_pos_feats, dtype=torch.float32).cuda(CUDA_ID)
+        dim_t = torch.arange(self.num_pos_feats, dtype=torch.float32).cuda()
         dim_t = self.temperature ** (2 * (dim_t // 2) / self.num_pos_feats)
 
         pos_x = x_embed[:, :, :, None] / dim_t
@@ -123,10 +122,3 @@ def build_position_encoding(hidden_dim=512, position_embedding="sine"):
         raise ValueError(f"not supported {position_embedding}")
 
     return position_embedding
-
-def set_cuda_id(id):
-    global CUDA_ID
-    CUDA_ID = id
-
-def get_cuda_id():
-    return CUDA_ID

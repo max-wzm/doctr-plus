@@ -25,14 +25,14 @@ class MixedDataset(torch.utils.data.Dataset):
             appearance_augmentation=appearance_augmentation,
             geometric_augmentations=[],
             grid_size=grid_size,
-            split=split
+            split=split,
         )
         self.uv_dataset = UVDocDataset(
             uv_data_path,
             appearance_augmentation=appearance_augmentation,
             geometric_augmentations=geometric_augmentations,
             grid_size=grid_size,
-            split=split
+            split=split,
         )
 
     def __len__(self):

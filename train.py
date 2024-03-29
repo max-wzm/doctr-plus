@@ -12,7 +12,6 @@ from data_process.qb_dataset import QbDataset
 from data_process.utils import get_unwarp, tensor_unwarping
 from data_process.uvdoc_dataset import UVDocDataset
 from network.core_net import GeoTr
-from network.position_encoding import CUDA_ID, set_cuda_id
 
 os.environ["WANDB_API_KEY"] = "7974567f16cc72e73931e4bfb12c157156ab7109"
 gamma_w = 0.0
@@ -49,13 +48,13 @@ def setup_data(args):
     dataset_cls_dict = {
         "mixed": MixedDataset,
         "uvdoc": UVDocDataset,
-        "qbdoc": QbDataset, 
+        "qbdoc": QbDataset,
     }
     data_cls = dataset_cls_dict[args.data_to_use]
     t_UVDoc_data = data_cls(
         appearance_augmentation=args.appearance_augmentation,
         geometric_augmentations=args.geometric_augmentationsUVDoc,
-        split="train"
+        split="train",
     )
     v_UVDoc_data = data_cls(split="val")
     train_loader = DataLoader(
@@ -80,7 +79,7 @@ def setup_data_v1(args):
     t_UVDoc_data = QbDataset(
         appearance_augmentation=args.appearance_augmentation,
         geometric_augmentations=args.geometric_augmentationsUVDoc,
-        split="train"
+        split="train",
     )
     v_UVDoc_data = MixedDataset(split="val")
     train_loader = DataLoader(
@@ -106,7 +105,7 @@ def setup_data_v2(args):
     t_UVDoc_data = data_cls(
         appearance_augmentation=args.appearance_augmentation,
         geometric_augmentations=args.geometric_augmentationsUVDoc,
-        split="train"
+        split="train",
     )
     v_UVDoc_data = MixedDataset(split="val")
     train_loader = DataLoader(
@@ -157,9 +156,21 @@ def update_learning_rate(scheduler, optimizer):
     return lr
 
 
+def load_model(path, net, optimizer):
+    log("Loading model and optimizer from checkpoint '{}'".format(path))
+    checkpoint = torch.load(path)
+
+    net.load_state_dict(checkpoint["model_state"])
+    optimizer.load_state_dict(checkpoint["optimizer_state"])
+    log("Loaded checkpoint '{}' (epoch {})".format(path, checkpoint["epoch"]))
+    epoch_start = checkpoint["epoch"]
+    return net, optimizer, epoch_start
+
+
 def main_worker(args):
     train_loader, val_loader = setup_data_v1(args)
     device = torch.device(f"cuda:{args.id}")
+    torch.cuda.set_device(args.id)
 
     net = GeoTr()
     net.to(device)
@@ -205,17 +216,7 @@ def main_worker(args):
 
     if args.resume is not None:
         if os.path.isfile(args.resume):
-            log("Loading model and optimizer from checkpoint '{}'".format(args.resume))
-            checkpoint = torch.load(args.resume)
-
-            net.load_state_dict(checkpoint["model_state"])
-            optimizer.load_state_dict(checkpoint["optimizer_state"])
-            log(
-                "Loaded checkpoint '{}' (epoch {})".format(
-                    args.resume, checkpoint["epoch"]
-                )
-            )
-            epoch_start = checkpoint["epoch"]
+            net, optimizer, epoch_start = load_model(args.resume, net, optimizer)
             if epoch_start >= args.ep_gamma_start:
                 gamma_w = args.gamma_w
         else:
@@ -444,7 +445,6 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    set_cuda_id(args.id)
     wandb.init(
         project=args.project,
         config={
