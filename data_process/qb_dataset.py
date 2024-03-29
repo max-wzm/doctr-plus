@@ -63,7 +63,7 @@ class QbDataset(BaseDataset):
             img_size=IMG_SIZE,
             grid_size=grid_size,
         )
-        self.original_grid_size = (448, 448)  # size of the captured data
+        self.original_grid_size = (89, 61)  # size of the captured data
         self.geometric_transform = get_geometric_transform(
             geometric_augmentations, gridsize=self.original_grid_size
         )
@@ -113,7 +113,8 @@ class QbDataset(BaseDataset):
         bm_path = pjoin(self.dataroot, "bm", f"{sample_id}.mat")
 
         img_RGB = cv2.imread(img_path)
-        bm = h5.loadmat(bm_path)["bm"].transpose(2, 0, 1)
+        bm = h5.loadmat(bm_path)["bm"]
+        bm = resize_bm(bm, (89, 61)).transpose(2, 0, 1)
 
         img_RGB, bm = self.transform_image(img_RGB, bm)
         h, w, _ = img_RGB.shape
