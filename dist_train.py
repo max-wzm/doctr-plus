@@ -296,7 +296,7 @@ def basic_worker(args):
             }
             model_path = (
                 "models/"
-                + f"{current_time}_ep_{epoch + 1}_{val_mse:.5f}_{train_mse:.5f}_best_model.pkl"
+                + f"dist_{current_time}_ep_{epoch + 1}_{val_mse:.5f}_{train_mse:.5f}_best_model.pkl"
             )
             torch.save(state, model_path)
         dist.barrier()
