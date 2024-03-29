@@ -227,7 +227,7 @@ def basic_worker(args):
     logger = get_logger(log_file_name)
 
     dist.init_process_group("nccl")
-    rank = dist.get_rank()
+    rank = dist.get_rank() + 4
     world_size = dist.get_world_size()
     device = torch.device(f"cuda:{rank}")
     torch.cuda.set_device(rank)
@@ -286,7 +286,7 @@ def basic_worker(args):
         wandb.log({"train_mse": train_mse})
         wandb.log({"val_mse": val_mse})
         
-        if rank == 7 and val_mse < best_val_mse or epoch == args.n_epochs + args.n_epochs_decay:
+        if rank == 0 and val_mse < best_val_mse or epoch == args.n_epochs + args.n_epochs_decay:
             best_val_mse = val_mse
             # save
             state = {
