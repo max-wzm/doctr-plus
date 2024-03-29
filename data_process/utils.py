@@ -67,10 +67,10 @@ def crop_image_tight(img, grid2D, cropped_box):
     cy1 = random.randint(0, max(s - 3, 1))
     cy2 = random.randint(0, max(s - 3, 1)) + 1
 
-    top = max(0, miny + random.randint(-10, 10))
-    bot = min(448, maxy + random.randint(-10, 10))
-    left = max(0, minx + random.randint(-10, 10))
-    right = min(448, maxx + random.randint(-10, 10))
+    top = max(0, miny + random.randint(-10, 0))
+    bot = min(448, maxy + random.randint(0, 10))
+    left = max(0, minx + random.randint(-10, 0))
+    right = min(448, maxx + random.randint(0, 10))
     return (top, bot, left, right)
 
 
@@ -141,6 +141,9 @@ def resize_bm(bm2, target_size):
     bm shape = (H, W, D)
     bm[h, w] = [w, h]
     """
+    h, w, _ = bm2.shape
+    if (h, w) == target_size:
+        return bm2
     bm2 = bm2.transpose(2, 0, 1)
     grid2D = torch.from_numpy(bm2).float()
     upsampled_grid = F.interpolate(
