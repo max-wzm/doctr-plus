@@ -209,7 +209,7 @@ def eval_epoch(epoch, val_loader, net, device, mse_loss):
 def load_model(path, net, optimizer, device):
     log("Loading model and optimizer from checkpoint '{}'".format(path))
     checkpoint = torch.load(path, map_location=device)
-    print(checkpoint["model_state"])
+    # print(checkpoint["model_state"])
     net.load_state_dict(checkpoint["model_state"])
     # optimizer.load_state_dict(checkpoint["optimizer_state"])
     log("Loaded checkpoint '{}' (epoch {})".format(path, checkpoint["epoch"]))
@@ -239,6 +239,8 @@ def basic_worker(args):
     optimizer = torch.optim.Adam(
         net.parameters(), lr=args.lr * world_size, betas=(0.9, 0.999)
     )
+    net = torch.nn.SyncBatchNorm.convert_sync_batchnorm(net)
+    net = torch.nn.parallel.DistributedDataParallel(net, device_ids=[rank], find_unused_parameters=True)
     epoch_start = 0
     global gamma_w
     if args.resume:
@@ -250,9 +252,7 @@ def basic_worker(args):
                 gamma_w = args.gamma_w
         else:
             log("No checkpoint found at '{}'".format(args.resume))
-    net = torch.nn.SyncBatchNorm.convert_sync_batchnorm(net)
-    net = torch.nn.parallel.DistributedDataParallel(net, device_ids=[rank], find_unused_parameters=True)
-
+    
     l1_loss = torch.nn.L1Loss().to(device)
     mse_loss = torch.nn.MSELoss().to(device)
 
