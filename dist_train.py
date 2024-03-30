@@ -211,7 +211,7 @@ def load_model(path, net, optimizer, device):
     checkpoint = torch.load(path, map_location=device)
 
     net.load_state_dict(checkpoint["model_state"])
-    optimizer.load_state_dict(checkpoint["optimizer_state"])
+    # optimizer.load_state_dict(checkpoint["optimizer_state"])
     log("Loaded checkpoint '{}' (epoch {})".format(path, checkpoint["epoch"]))
     epoch_start = checkpoint["epoch"]
     return net, optimizer, epoch_start
