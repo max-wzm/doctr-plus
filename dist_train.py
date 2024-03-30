@@ -209,7 +209,7 @@ def eval_epoch(epoch, val_loader, net, device, mse_loss):
 def load_model(path, net, optimizer, device):
     log("Loading model and optimizer from checkpoint '{}'".format(path))
     checkpoint = torch.load(path, map_location=device)
-
+    print(checkpoint["model_state"])
     net.load_state_dict(checkpoint["model_state"])
     # optimizer.load_state_dict(checkpoint["optimizer_state"])
     log("Loaded checkpoint '{}' (epoch {})".format(path, checkpoint["epoch"]))
