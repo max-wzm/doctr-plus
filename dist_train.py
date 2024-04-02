@@ -154,7 +154,7 @@ def train_epoch(
 
         perturb_fm, perturb_bm = warper_util.perturb_warp(pred_bm.size(0))
         pertur_img = tensor_unwarping(img_uv_c, perturb_fm)
-        pred_perturb_bm = net(pertur_img)
+        pred_perturb_bm = net(pertur_img.detach())
         pred_perturb_bm = ((pred_perturb_bm / 288.0) - 0.5) * 2
 
         optimizer.zero_grad(set_to_none=True)
@@ -162,7 +162,7 @@ def train_epoch(
         recon_loss = l1_loss(pred_img_dw, img_uv_dw_c)
         bm_loss = l1_loss(pred_bm, bm_c)
         # log("entering ppedge loss")
-        ppedge_loss = local_loss.warp_diff_loss(pred_bm, pred_perturb_bm, perturb_fm, perturb_bm)
+        ppedge_loss = local_loss.warp_diff_loss(pred_bm, pred_perturb_bm, perturb_fm.detach(), perturb_bm.detach())
         # log(f"ppedge loss is {float(ppedge_loss)}")
         net_loss = alpha_w * bm_loss + gamma_w * recon_loss + 2.0 * ppedge_loss
         net_loss.backward()
