@@ -1,7 +1,6 @@
 import os
 import random
 import warnings
-from os.path import join as pjoin
 from random import randint
 
 import cv2
@@ -10,7 +9,7 @@ import numpy as np
 
 from data_process import GRID_SIZE, IMG_SIZE
 from data_process.base import BaseDataset, get_geometric_transform
-from data_process.utils import do_tight_crop, numpy_unwarping, resize_bm
+from data_process.utils import ImageInfo, do_tight_crop, numpy_unwarping, resize_bm
 
 
 def trigger(prob):
@@ -20,7 +19,7 @@ def trigger(prob):
 def get_bound_crop():
     bound = (0, 448, 0, 448)
     # return bound
-    if trigger(0.7):
+    if trigger(0.6):
         return bound
 
     h, w = randint(2, 3), randint(2, 3)
@@ -50,7 +49,8 @@ class QbDataset(BaseDataset):
 
     def __init__(
         self,
-        data_path="./data/QBdoc",
+        dataroots=["./data/QBdoc2", "./data/Realdoc"],
+        suffixes=["jpg", "png"],
         appearance_augmentation=[],
         geometric_augmentations=[],
         grid_size=GRID_SIZE,
@@ -58,7 +58,6 @@ class QbDataset(BaseDataset):
         train_ratio=0.7,
     ) -> None:
         super().__init__(
-            data_path=data_path,
             appearance_augmentation=appearance_augmentation,
             img_size=IMG_SIZE,
             grid_size=grid_size,
@@ -67,12 +66,7 @@ class QbDataset(BaseDataset):
         self.geometric_transform = get_geometric_transform(
             geometric_augmentations, gridsize=self.original_grid_size
         )
-
-        self.all_samples = [
-            x[:-4]
-            for x in os.listdir(pjoin(self.dataroot, "img"))
-            if x.endswith(".jpg")
-        ]
+        self.all_samples = ImageInfo.read_from_dataroots(dataroots, suffixes)
         train_ends = int(len(self.all_samples) * train_ratio)
         assert split in ["train", "val"]
         if split == "train":
@@ -108,9 +102,9 @@ class QbDataset(BaseDataset):
 
     def __getitem__(self, index):
         # Get all paths
-        sample_id = self.all_samples[index]
-        img_path = pjoin(self.dataroot, "img", f"{sample_id}.jpg")
-        bm_path = pjoin(self.dataroot, "bm", f"{sample_id}.mat")
+        image_info = self.all_samples[index]
+        img_path = image_info.img_path
+        bm_path = image_info.bm_path
 
         img_RGB = cv2.imread(img_path)
         bm = h5.loadmat(bm_path)["bm"]

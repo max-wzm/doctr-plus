@@ -13,7 +13,7 @@ import torch
 
 from data_process import GRID_SIZE, IMG_SIZE
 from data_process.base import BaseDataset, get_geometric_transform
-from data_process.utils import do_tight_crop, numpy_unwarping, resize_bm
+from data_process.utils import ImageInfo, do_tight_crop, numpy_unwarping, resize_bm
 
 
 def trigger(prob):
@@ -52,7 +52,8 @@ class UVDocDataset(BaseDataset):
 
     def __init__(
         self,
-        data_path="./data/UVdoc",
+        dataroots=["./data/UVdoc"],
+        suffixes=["png"],
         appearance_augmentation=[],
         geometric_augmentations=[],
         grid_size=GRID_SIZE,
@@ -60,7 +61,6 @@ class UVDocDataset(BaseDataset):
         train_ratio=0.9,
     ) -> None:
         super().__init__(
-            data_path=data_path,
             appearance_augmentation=appearance_augmentation,
             img_size=IMG_SIZE,
             grid_size=grid_size,
@@ -70,11 +70,7 @@ class UVDocDataset(BaseDataset):
             geometric_augmentations, gridsize=self.original_grid_size
         )
 
-        self.all_samples = [
-            x[:-4]
-            for x in os.listdir(pjoin(self.dataroot, "img"))
-            if x.endswith(".png")
-        ]
+        self.all_samples = ImageInfo.read_from_dataroots(dataroots, suffixes)
         train_ends = int(len(self.all_samples) * train_ratio)
         assert split in ["train", "val"]
         if split == "train":
@@ -109,13 +105,9 @@ class UVDocDataset(BaseDataset):
 
     def __getitem__(self, index):
         # Get all paths
-        sample_id = self.all_samples[index]
-        with open(
-            pjoin(self.dataroot, "metadata_sample", f"{sample_id}.json"), "r"
-        ) as f:
-            sample_name = json.load(f)["geom_name"]
-        img_path = pjoin(self.dataroot, "img", f"{sample_id}.png")
-        grid2D_path = pjoin(self.dataroot, "grid2d", f"{sample_name}.mat")
+        image_info = self.all_samples[index]
+        img_path = image_info.img_path
+        grid2D_path = image_info.grid2D_path
 
         # Load 2D grid, 3D grid and image. Normalize 3D grid
         with h5.File(grid2D_path, "r") as file:

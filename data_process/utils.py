@@ -1,4 +1,7 @@
+import json
+import os
 import random
+from os.path import join as pjoin
 
 import cv2
 import hdf5storage as h5
@@ -9,6 +12,44 @@ from matplotlib import pyplot as plt
 
 RANGE_H = (0, 288)
 RANGE_W = (0, 288)
+
+
+class ImageInfo:
+    def __init__(self, dataroot, sample_id, suffix) -> None:
+        self.dataroot = dataroot
+        self.sample_id = sample_id
+        self.suffix = suffix
+        pass
+
+    @staticmethod
+    def read_from_dataroots(dataroots, suffixes):
+        res = []
+        for i, dataroot in enumerate(dataroots):
+            suffix = suffixes[i]
+            all_samples = [
+                ImageInfo(dataroot, x[:-4], suffix)
+                for x in os.listdir(pjoin(dataroot, "img"))
+                if x.endswith(suffix)
+            ]
+            res.extend(all_samples)
+        return res
+
+    @property
+    def img_path(self):
+        return pjoin(self.dataroot, "img", f"{self.sample_id}.{self.suffix}")
+
+    @property
+    def bm_path(self):
+        return pjoin(self.dataroot, "bm", f"{self.sample_id}.mat")
+
+    @property
+    def grid2D_path(self):
+        with open(
+            pjoin(self.dataroot, "metadata_sample", f"{self.sample_id}.json"), "r"
+        ) as f:
+            sample_name = json.load(f)["geom_name"]
+        grid2D_path = pjoin(self.dataroot, "grid2d", f"{sample_name}.mat")
+        return grid2D_path
 
 
 def new_h_map(old_h, warped_box, cropped_box):

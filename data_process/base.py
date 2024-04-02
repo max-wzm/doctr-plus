@@ -138,14 +138,12 @@ class BaseDataset(torch.utils.data.Dataset):
 
     def __init__(
         self,
-        data_path,
         appearance_augmentation=[],
         img_size=IMG_SIZE,
         grid_size=GRID_SIZE,
     ) -> None:
         super().__init__()
 
-        self.dataroot = data_path
         self.img_size = img_size
         self.grid_size = grid_size
         self.normalize_3Dgrid = True
