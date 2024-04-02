@@ -22,5 +22,5 @@ geometric_augmentationsUVDoc:
   - perspective
 num_workers: 8
 project: "test_doctr++"
-group: ""
+group: "self-supervised"
 id: 0
