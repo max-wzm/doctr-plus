@@ -7,8 +7,8 @@ import torch
 import torch.distributed as dist
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
-import wandb
 
+import wandb
 from data_process.mixed_dataset import MixedDataset
 from data_process.qb_dataset import QbDataset
 from data_process.utils import get_unwarp, tensor_unwarping
@@ -210,7 +210,10 @@ def load_model(path, net, optimizer, device):
     log("Loading model and optimizer from checkpoint '{}'".format(path))
     checkpoint = torch.load(path, map_location=device)
     # print(checkpoint["model_state"])
-    net.load_state_dict(checkpoint["model_state"])
+    model_state = checkpoint["model_state"]
+    if not model_state.keys()[0].startswith("module."):
+        model_state = {"module." + k: v for k, v in model_state.items()}
+    net.load_state_dict(model_state)
     # optimizer.load_state_dict(checkpoint["optimizer_state"])
     log("Loaded checkpoint '{}' (epoch {})".format(path, checkpoint["epoch"]))
     epoch_start = checkpoint["epoch"]
@@ -225,7 +228,7 @@ def basic_worker(args):
     log_file_name = os.path.join(args.logdir, experiment_name + ".log")
     global logger
     logger = get_logger(log_file_name)
-    
+
     dist.init_process_group("nccl")
     rank = dist.get_rank()
     logger.info(f"Start running dist_worker on rank {rank}")
@@ -233,14 +236,15 @@ def basic_worker(args):
     device = torch.device(f"cuda:{rank}")
     torch.cuda.set_device(rank)
 
-    
     train_loader, val_loader, train_sampler, val_sampler = setup_data(args)
     net = GeoTr().to(device)
     optimizer = torch.optim.Adam(
         net.parameters(), lr=args.lr * world_size, betas=(0.9, 0.999)
     )
     net = torch.nn.SyncBatchNorm.convert_sync_batchnorm(net)
-    net = torch.nn.parallel.DistributedDataParallel(net, device_ids=[rank], find_unused_parameters=True)
+    net = torch.nn.parallel.DistributedDataParallel(
+        net, device_ids=[rank], find_unused_parameters=True
+    )
     epoch_start = 0
     global gamma_w
     if args.resume:
@@ -252,7 +256,7 @@ def basic_worker(args):
                 gamma_w = args.gamma_w
         else:
             log("No checkpoint found at '{}'".format(args.resume))
-    
+
     l1_loss = torch.nn.L1Loss().to(device)
     mse_loss = torch.nn.MSELoss().to(device)
 
@@ -285,8 +289,12 @@ def basic_worker(args):
 
         wandb.log({"train_mse": train_mse})
         wandb.log({"val_mse": val_mse})
-        
-        if rank == 0 and val_mse < best_val_mse or epoch == args.n_epochs + args.n_epochs_decay:
+
+        if (
+            rank == 0
+            and val_mse < best_val_mse
+            or epoch == args.n_epochs + args.n_epochs_decay
+        ):
             best_val_mse = val_mse
             # save
             state = {
@@ -298,7 +306,8 @@ def basic_worker(args):
             if not os.path.exists(dir):
                 os.makedirs(dir)
             model_path = (
-                dir + f"dist_ep_{epoch + 1}_{val_mse:.5f}_{train_mse:.5f}_best_model.pkl"
+                dir
+                + f"dist_ep_{epoch + 1}_{val_mse:.5f}_{train_mse:.5f}_best_model.pkl"
             )
             torch.save(state, model_path)
         dist.barrier()
