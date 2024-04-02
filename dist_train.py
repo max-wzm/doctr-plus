@@ -211,7 +211,7 @@ def load_model(path, net, optimizer, device):
     checkpoint = torch.load(path, map_location=device)
     # print(checkpoint["model_state"])
     model_state = checkpoint["model_state"]
-    if not model_state.keys()[0].startswith("module."):
+    if not list(model_state.keys())[0].startswith("module."):
         model_state = {"module." + k: v for k, v in model_state.items()}
     net.load_state_dict(model_state)
     # optimizer.load_state_dict(checkpoint["optimizer_state"])
@@ -311,6 +311,8 @@ def basic_worker(args):
             )
             torch.save(state, model_path)
         dist.barrier()
+
+    cleanup()
 
 
 if __name__ == "__main__":
