@@ -49,8 +49,8 @@ class QbDataset(BaseDataset):
 
     def __init__(
         self,
-        qb_data_path=["./data/QBdoc2", "./data/Realdoc"],
-        real_suffix=["jpg", "png"],
+        qb_data_path=["./data/QBdoc2", "./data/QBdoc"],
+        real_suffix=["jpg", "jpg"],
         appearance_augmentation=[],
         geometric_augmentations=[],
         grid_size=GRID_SIZE,
@@ -74,6 +74,7 @@ class QbDataset(BaseDataset):
         if split == "val":
             self.all_samples = self.all_samples[train_ends:]
             self.all_samples = self.all_samples[:5000]
+        print("len of qbdataset", len(self.all_samples))
 
     def transform_image(self, img_RGB, grid2D):
         """
