@@ -1,0 +1,26 @@
+data_path_doc3D: "./data/doc3D/"
+data_path_UVDoc: "./data/UVdoc/"
+data_to_use: qbdoc
+batch_size: 1
+n_epochs: 40
+n_epochs_decay: 25
+lr: 0.0001
+alpha_w: 5.0
+beta_w: 5.0
+gamma_w: 1.0
+ep_gamma_start: 30
+resume: "models/init_model.pkl"
+logdir: "./log/default"
+appearance_augmentation:
+  - shadow
+  - visual
+  - noise
+  - color
+geometric_augmentationsUVDoc:
+  - rotate
+  - flip
+  - perspective
+num_workers: 8
+project: "test_doctr++"
+group: ""
+id: 0

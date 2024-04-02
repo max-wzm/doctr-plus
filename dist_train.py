@@ -9,11 +9,13 @@ from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
 import wandb
+from config import TrainConfig
 from data_process.mixed_dataset import MixedDataset
 from data_process.qb_dataset import QbDataset
 from data_process.utils import get_unwarp, tensor_unwarping
 from data_process.uvdoc_dataset import UVDocDataset
 from network.core_net import GeoTr
+from network.netloss import LocalLoss, WarperUtil
 
 os.environ["WANDB_API_KEY"] = "7974567f16cc72e73931e4bfb12c157156ab7109"
 gamma_w = 0.0
@@ -21,7 +23,7 @@ gamma_w = 0.0
 import logging
 
 logger: logging.Logger = None
-
+warper_util: WarperUtil = None
 
 def get_logger(filename, verbosity=1, name=None):
     level_dict = {0: logging.DEBUG, 1: logging.INFO, 2: logging.WARNING}
@@ -132,6 +134,7 @@ def train_epoch(
     alpha_w,
     l1_loss,
     mse_loss,
+    local_loss: LocalLoss
 ):
     net.train()
     losscount = 0
@@ -146,21 +149,27 @@ def train_epoch(
         # net input size is (b, 3, 288, 288)
         # net output size is (b, 2, 288, 288)
         pred_bm = net(img_uv_c)
-        if pred_bm.max() > 2:
-            # log(f"warning here: {pred_bm.max()}")
-            pred_bm = ((pred_bm / 288.0) - 0.5) * 2
+        pred_bm = ((pred_bm / 288.0) - 0.5) * 2
         pred_img_dw = tensor_unwarping(img_uv_c, pred_bm)
+
+        perturb_fm, perturb_bm = warper_util.perturb_warp(pred_bm.size(0))
+        pertur_img = tensor_unwarping(img_uv_c, perturb_fm)
+        pred_perturb_bm = net(pertur_img)
+        pred_perturb_bm = ((pred_perturb_bm / 288.0) - 0.5) * 2
 
         optimizer.zero_grad(set_to_none=True)
 
         recon_loss = l1_loss(pred_img_dw, img_uv_dw_c)
         bm_loss = l1_loss(pred_bm, bm_c)
-        net_loss = alpha_w * bm_loss + gamma_w * recon_loss
+        # log("entering ppedge loss")
+        ppedge_loss = local_loss.warp_diff_loss(pred_bm, pred_perturb_bm, perturb_fm, perturb_bm)
+        # log(f"ppedge loss is {float(ppedge_loss)}")
+        net_loss = alpha_w * bm_loss + gamma_w * recon_loss + 2.0 * ppedge_loss
         net_loss.backward()
         optimizer.step()
 
         tmp_mse = mse_loss(pred_img_dw, img_uv_dw_c)
-        wandb.log({"train_loss": net_loss})
+        wandb.log({"train_loss": net_loss, "ppedge_loss": ppedge_loss})
         if losscount % 50 == 0:
             img_sample = img_uv_c.detach().cpu().numpy()[0].transpose(1, 2, 0)
             img_dw_sample = img_uv_dw_c.detach().cpu().numpy()[0].transpose(1, 2, 0)
@@ -236,6 +245,9 @@ def basic_worker(args):
     device = torch.device(f"cuda:{rank}")
     torch.cuda.set_device(rank)
 
+    global warper_util
+    warper_util = WarperUtil(64).to(device)
+
     train_loader, val_loader, train_sampler, val_sampler = setup_data(args)
     net = GeoTr().to(device)
     optimizer = torch.optim.Adam(
@@ -260,6 +272,7 @@ def basic_worker(args):
 
     l1_loss = torch.nn.L1Loss().to(device)
     mse_loss = torch.nn.MSELoss().to(device)
+    self_loss = LocalLoss().to(device)
 
     lr_scheduler = get_lr_scheduler(optimizer, args, epoch_start)
 
@@ -282,6 +295,7 @@ def basic_worker(args):
             args.alpha_w,
             l1_loss,
             mse_loss,
+            self_loss,
         )
         log(f"TRAIN at EPOCH {epoch} ENS: train_mse = {train_mse}, curr_lr = {curr_lr}")
 
@@ -291,10 +305,8 @@ def basic_worker(args):
         wandb.log({"train_mse": train_mse})
         wandb.log({"val_mse": val_mse})
 
-        if (
-            rank == 0
-            and val_mse < best_val_mse
-            or epoch == args.n_epochs + args.n_epochs_decay
+        if rank == 0 and (
+            val_mse < best_val_mse or epoch == args.n_epochs + args.n_epochs_decay
         ):
             best_val_mse = val_mse
             # save
@@ -317,144 +329,12 @@ def basic_worker(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Hyperparams")
-
-    parser.add_argument(
-        "--data_path_doc3D",
-        nargs="?",
-        type=str,
-        default="./data/doc3D/",
-        help="Data path to load Doc3D data.",
-    )
-    parser.add_argument(
-        "--data_path_UVDoc",
-        nargs="?",
-        type=str,
-        default="./data/UVdoc/",
-        help="Data path to load UVDoc data.",
-    )
-    parser.add_argument(
-        "--data_to_use",
-        type=str,
-        default="mixed",
-        choices=["mixed", "uvdoc", "qbdoc"],
-        help="Dataset to use for training, either 'both' for Doc3D and UVDoc, or 'doc3d' for Doc3D only.",
-    )
-    parser.add_argument(
-        "--batch_size", nargs="?", type=int, default=1, help="Batch size."
-    )
-    parser.add_argument(
-        "--n_epochs",
-        nargs="?",
-        type=int,
-        default=40,
-        help="Number of epochs with initial (constant) learning rate.",
-    )
-    parser.add_argument(
-        "--n_epochs_decay",
-        nargs="?",
-        type=int,
-        default=25,
-        help="Number of epochs to linearly decay learning rate to zero.",
-    )
-    parser.add_argument(
-        "--lr", nargs="?", type=float, default=1e-4, help="Initial learning rate."
-    )
-    parser.add_argument(
-        "--alpha_w",
-        nargs="?",
-        type=float,
-        default=5.0,
-        help="Weight for the 2D grid L1 loss.",
-    )
-    parser.add_argument(
-        "--beta_w",
-        nargs="?",
-        type=float,
-        default=5.0,
-        help="Weight for the 3D grid L1 loss.",
-    )
-    parser.add_argument(
-        "--gamma_w",
-        nargs="?",
-        type=float,
-        default=1.0,
-        help="Weight for the image reconstruction loss.",
-    )
-    parser.add_argument(
-        "--ep_gamma_start",
-        nargs="?",
-        type=int,
-        default=30,
-        help="Epoch from which to start using image reconstruction loss.",
-    )
-    parser.add_argument(
-        "--resume",
-        nargs="?",
-        type=str,
-        default="models/init_model.pkl",
-        help="Path to previous saved model to restart from.",
-    )
-    parser.add_argument(
-        "--logdir",
-        nargs="?",
-        type=str,
-        default="./log/default",
-        help="Path to store the logs.",
-    )
-    parser.add_argument(
-        "-a",
-        "--appearance_augmentation",
-        nargs="*",
-        type=str,
-        default=["shadow", "visual", "noise", "color"],
-        choices=["shadow", "blur", "visual", "noise", "color"],
-        help="Appearance augmentations to use.",
-    )
-    parser.add_argument(
-        "-gUVDoc",
-        "--geometric_augmentationsUVDoc",
-        nargs="*",
-        type=str,
-        default=["rotate", "flip", "perspective"],
-        choices=["rotate", "flip", "perspective"],
-        help="Geometric augmentations to use for the UVDoc dataset.",
-    )
-    parser.add_argument(
-        "--num_workers",
-        type=int,
-        default=8,
-        help="Number of workers to use for the dataloaders.",
-    )
-    parser.add_argument(
-        "--project",
-        type=str,
-        default="test_doctr++",
-        help="Number of workers to use for the dataloaders.",
-    )
-    parser.add_argument(
-        "--group",
-        type=str,
-        default="DDP",
-        help="Number of workers to use for the dataloaders.",
-    )
-    parser.add_argument(
-        "--id",
-        type=int,
-        default=0,
-        help="Number of workers to use for the dataloaders.",
-    )
-
-    args = parser.parse_args()
-
-    print(args)
+    args = TrainConfig()
+    print(args.config_dict)
 
     wandb.init(
         project=args.project,
         group=args.group,
-        config={
-            "learning_rate": args.lr,
-            "epochs": args.n_epochs + args.n_epochs_decay,
-        },
+        config=args.config_dict,
     )
     basic_worker(args)

@@ -52,8 +52,8 @@ class UVDocDataset(BaseDataset):
 
     def __init__(
         self,
-        dataroots=["./data/UVdoc"],
-        suffixes=["png"],
+        uv_data_path=["./data/UVdoc"],
+        syn_suffix=["png"],
         appearance_augmentation=[],
         geometric_augmentations=[],
         grid_size=GRID_SIZE,
@@ -70,7 +70,7 @@ class UVDocDataset(BaseDataset):
             geometric_augmentations, gridsize=self.original_grid_size
         )
 
-        self.all_samples = ImageInfo.read_from_dataroots(dataroots, suffixes)
+        self.all_samples = ImageInfo.read_from_dataroots(uv_data_path, syn_suffix)
         train_ends = int(len(self.all_samples) * train_ratio)
         assert split in ["train", "val"]
         if split == "train":

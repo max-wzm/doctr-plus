@@ -49,8 +49,8 @@ class QbDataset(BaseDataset):
 
     def __init__(
         self,
-        dataroots=["./data/QBdoc2", "./data/Realdoc"],
-        suffixes=["jpg", "png"],
+        qb_data_path=["./data/QBdoc2", "./data/Realdoc"],
+        real_suffix=["jpg", "png"],
         appearance_augmentation=[],
         geometric_augmentations=[],
         grid_size=GRID_SIZE,
@@ -66,7 +66,7 @@ class QbDataset(BaseDataset):
         self.geometric_transform = get_geometric_transform(
             geometric_augmentations, gridsize=self.original_grid_size
         )
-        self.all_samples = ImageInfo.read_from_dataroots(dataroots, suffixes)
+        self.all_samples = ImageInfo.read_from_dataroots(qb_data_path, real_suffix)
         train_ends = int(len(self.all_samples) * train_ratio)
         assert split in ["train", "val"]
         if split == "train":
