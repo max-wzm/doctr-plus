@@ -252,6 +252,7 @@ def basic_worker(args):
             net, optimizer, epoch_start = load_model(
                 args.resume, net, optimizer, device
             )
+            epoch_start = 0
             if epoch_start >= args.ep_gamma_start:
                 gamma_w = args.gamma_w
         else:
