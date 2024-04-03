@@ -24,6 +24,7 @@ import logging
 logger: logging.Logger = None
 warper_util: WarperUtil = None
 
+
 def get_logger(filename, verbosity=1, name=None):
     level_dict = {0: logging.DEBUG, 1: logging.INFO, 2: logging.WARNING}
     formatter = logging.Formatter(
@@ -144,7 +145,7 @@ def train_epoch(
     for batch in train_loader:
         if args.data_to_use == "mixed_sep":
             img_uv, img_uv_dw, bm = batch[0]
-            img_qb, _, _ = batch[1]
+            img_qb, img_qb_dw, _ = batch[1]
         else:
             img_uv, img_uv_dw, bm = batch
 
@@ -200,7 +201,7 @@ def train_epoch(
             net.zero_grad()
             pred_bm = net(img_qb_c)
             pred_bm = ((pred_bm / 288.0) - 0.5) * 2
-            # pred_img_dw = tensor_unwarping(img_qb_c, pred_bm)
+            pred_img_dw = tensor_unwarping(img_qb_c, pred_bm)
 
             perturb_fm, perturb_bm = warper_util.perturb_warp(pred_bm.size(0))
             pertur_img = tensor_unwarping(img_qb_c, perturb_fm)
@@ -212,6 +213,14 @@ def train_epoch(
             )
             ppedge_loss.backward()
             optimizer.step()
+            if losscount % 50 == 0:
+                img_sample = img_qb_c.detach().cpu().numpy()[0].transpose(1, 2, 0)
+                img_dw_sample = img_qb_dw.detach().cpu().numpy()[0].transpose(1, 2, 0)
+                img_pred_sample = pred_img_dw.detach().cpu().numpy()[0].transpose(1, 2, 0)
+                image = wandb.Image(img_sample, caption=f"real_ep{epoch}_before")
+                image_dw = wandb.Image(img_dw_sample, caption=f"real_after_gt")
+                image_pred = wandb.Image(img_pred_sample, caption=f"real_after_pred")
+                wandb.log({"Real": [image, image_dw, image_pred]})
             wandb.log(
                 {
                     "real_ppedge_loss": ppedge_loss,
