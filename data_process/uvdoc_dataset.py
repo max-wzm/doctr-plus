@@ -110,11 +110,8 @@ class UVDocDataset(BaseDataset):
         # Get all paths
         image_info = self.all_samples[index]
         img_path = image_info.img_path
-        grid2D_path = image_info.grid2D_path
-
         # Load 2D grid, 3D grid and image. Normalize 3D grid
-        with h5.File(grid2D_path, "r") as file:
-            grid2D = np.array(file["grid2d"][:].T.transpose(2, 0, 1))
+        grid2D = image_info.grid2D
         # print(grid2D_.shape) # 2, 89, 61
 
         img_RGB = cv2.imread(img_path)

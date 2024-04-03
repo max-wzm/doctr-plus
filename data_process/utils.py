@@ -56,6 +56,19 @@ class ImageInfo:
         grid2D_path = pjoin(self.dataroot, "grid2d", f"{sample_name}.mat")
         return grid2D_path
 
+    @property
+    def grid2D(self):
+        if not os.path.exists(pjoin(self.dataroot, "metadata_sample")):
+            with h5.File(self.bm_path, "r") as file:
+                return np.array(file["grid2D"][:].T.transpose(2, 0, 1))
+        with open(
+            pjoin(self.dataroot, "metadata_sample", f"{self.sample_id}.json"), "r"
+        ) as f:
+            sample_name = json.load(f)["geom_name"]
+        grid2D_path = pjoin(self.dataroot, "grid2d", f"{sample_name}.mat")
+        with h5.File(grid2D_path, "r") as file:
+            return np.array(file["grid2d"][:].T.transpose(2, 0, 1))
+
 
 def new_h_map(old_h, warped_box, cropped_box):
     w_top, w_btm, w_left, w_right = warped_box
