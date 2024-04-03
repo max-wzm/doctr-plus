@@ -81,7 +81,7 @@ def get_geometric_transform(transform_types, gridsize):
     if "rotate" in transform_types:
         transforms.append(
             A.SafeRotate(
-                limit=[-30, 30],
+                limit=[-15, 15],
                 interpolation=cv2.INTER_LINEAR,
                 border_mode=cv2.BORDER_REPLICATE,
                 p=0.5,
