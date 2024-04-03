@@ -56,6 +56,7 @@ class QbDataset(BaseDataset):
         grid_size=GRID_SIZE,
         split="train",
         train_ratio=0.7,
+        total_num=[20000, 20000],
     ) -> None:
         super().__init__(
             appearance_augmentation=appearance_augmentation,
@@ -66,7 +67,9 @@ class QbDataset(BaseDataset):
         self.geometric_transform = get_geometric_transform(
             geometric_augmentations, gridsize=self.original_grid_size
         )
-        self.all_samples = ImageInfo.read_from_dataroots(qb_data_path, real_suffix)
+        self.all_samples = ImageInfo.read_from_dataroots(
+            qb_data_path, real_suffix, total_num
+        )
         train_ends = int(len(self.all_samples) * train_ratio)
         assert split in ["train", "val"]
         if split == "train":

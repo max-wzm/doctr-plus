@@ -63,11 +63,16 @@ class LocalLoss(nn.Module):
 
     def warp_diff_loss(self, pred_bm, pred_perturb_bm, perturb_fm, perturb_bm):
         loss_f = F.l1_loss(
-            pred_bm, F.grid_sample(perturb_fm, pred_perturb_bm.permute(0, 2, 3, 1), align_corners=True).detach()
+            pred_bm,
+            F.grid_sample(
+                perturb_fm, pred_perturb_bm.permute(0, 2, 3, 1), align_corners=True
+            ).detach(),
         )
         loss_b = F.l1_loss(
             pred_perturb_bm,
-            F.grid_sample(perturb_bm, pred_bm.permute(0, 2, 3, 1), align_corners=True).detach(),
+            F.grid_sample(
+                perturb_bm, pred_bm.permute(0, 2, 3, 1), align_corners=True
+            ).detach(),
         )
         loss = loss_f + loss_b
         return loss

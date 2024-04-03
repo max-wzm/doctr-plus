@@ -22,15 +22,17 @@ class ImageInfo:
         pass
 
     @staticmethod
-    def read_from_dataroots(dataroots, suffixes):
+    def read_from_dataroots(dataroots, suffixes, total_num):
         res = []
         for i, dataroot in enumerate(dataroots):
             suffix = suffixes[i]
+            num = total_num[i]
             all_samples = [
                 ImageInfo(dataroot, x[:-4], suffix)
                 for x in os.listdir(pjoin(dataroot, "img"))
                 if x.endswith(suffix)
             ]
+            all_samples = random.shuffle(all_samples)[:num]
             res.extend(all_samples)
         return res
 
@@ -44,6 +46,8 @@ class ImageInfo:
 
     @property
     def grid2D_path(self):
+        if not os.path.exists(pjoin(self.dataroot, "metadata_sample")):
+            return self.bm_path
         with open(
             pjoin(self.dataroot, "metadata_sample", f"{self.sample_id}.json"), "r"
         ) as f:
