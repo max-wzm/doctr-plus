@@ -12,10 +12,10 @@ class MixedDataset(torch.utils.data.Dataset):
 
     def __init__(
         self,
-        qb_data_path=["./data/QBdoc2", "./data/Realdoc"],
+        qb_data_path=["./data/QBdoc2", "./data/QBdoc"],
         real_suffix=["jpg", "png"],
         uv_data_path=["./data/UVdoc", "./data/doc3"],
-        syn_suffix=["png"],
+        syn_suffix=["png", "png"],
         appearance_augmentation=[],
         geometric_augmentations=[],
         grid_size=GRID_SIZE,
