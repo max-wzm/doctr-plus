@@ -32,7 +32,8 @@ class ImageInfo:
                 for x in os.listdir(pjoin(dataroot, "img"))
                 if x.endswith(suffix)
             ]
-            all_samples = random.shuffle(all_samples)[:num]
+            random.shuffle(all_samples)
+            all_samples = all_samples[:num]
             res.extend(all_samples)
         return res
 
