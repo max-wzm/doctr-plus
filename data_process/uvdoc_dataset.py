@@ -52,7 +52,7 @@ class UVDocDataset(BaseDataset):
 
     def __init__(
         self,
-        uv_data_path=["./data/UVdoc", "./data/doc3d"],
+        uv_data_path=["./data/UVdoc", "./data/doc3"],
         syn_suffix=["png", "png"],
         appearance_augmentation=[],
         geometric_augmentations=[],

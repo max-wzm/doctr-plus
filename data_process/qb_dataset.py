@@ -56,7 +56,7 @@ class QbDataset(BaseDataset):
         grid_size=GRID_SIZE,
         split="train",
         train_ratio=0.7,
-        total_num=[20000, 20000],
+        total_num=[20000, 10000],
     ) -> None:
         super().__init__(
             appearance_augmentation=appearance_augmentation,

@@ -1,4 +1,3 @@
-import argparse
 import gc
 import os
 from datetime import datetime
@@ -10,7 +9,7 @@ from torch.utils.data.distributed import DistributedSampler
 
 import wandb
 from config import TrainConfig
-from data_process.mixed_dataset import MixedDataset
+from data_process.mixed_dataset import MixedDataset, MixedSeperateDataset
 from data_process.qb_dataset import QbDataset
 from data_process.utils import get_unwarp, tensor_unwarping
 from data_process.uvdoc_dataset import UVDocDataset
@@ -51,6 +50,7 @@ def log(content):
 def setup_data(args):
     dataset_cls_dict = {
         "mixed": MixedDataset,
+        "mixed_sep": MixedSeperateDataset,
         "uvdoc": UVDocDataset,
         "qbdoc": QbDataset,
     }
@@ -125,23 +125,30 @@ def cleanup():
 
 
 def train_epoch(
+    args,
     epoch,
     train_loader,
     net,
     optimizer,
     lr_scheduler,
     device,
-    alpha_w,
     l1_loss,
     mse_loss,
-    local_loss: LocalLoss
+    local_loss: LocalLoss,
 ):
     net.train()
+    alpha_w = args.alpha_w
+    beta_w = args.beta_w
     losscount = 0
     train_mse = 0.0
     for batch in train_loader:
-        img_uv, img_uv_dw, bm = batch
+        if args.data_to_use == "mixed_sep":
+            img_uv, img_uv_dw, bm = batch[0]
+            img_qb, _, _ = batch[1]
+        else:
+            img_uv, img_uv_dw, bm = batch
 
+        # train with 3d data
         img_uv_c = img_uv.to(device, non_blocking=True)
         img_uv_dw_c = img_uv_dw.to(device, non_blocking=True)
         bm_c = bm.to(device, non_blocking=True)
@@ -161,15 +168,24 @@ def train_epoch(
 
         recon_loss = l1_loss(pred_img_dw, img_uv_dw_c)
         bm_loss = l1_loss(pred_bm, bm_c)
-        # log("entering ppedge loss")
-        ppedge_loss = local_loss.warp_diff_loss(pred_bm, pred_perturb_bm, perturb_fm.detach(), perturb_bm.detach())
-        # log(f"ppedge loss is {float(ppedge_loss)}")
-        net_loss = alpha_w * bm_loss + gamma_w * recon_loss + 2.0 * ppedge_loss
+        ppedge_loss = local_loss.warp_diff_loss(
+            pred_bm, pred_perturb_bm, perturb_fm.detach(), perturb_bm.detach()
+        )
+        net_loss = alpha_w * bm_loss + gamma_w * recon_loss + beta_w * ppedge_loss
         net_loss.backward()
         optimizer.step()
 
         tmp_mse = mse_loss(pred_img_dw, img_uv_dw_c)
-        wandb.log({"train_loss": net_loss, "ppedge_loss": ppedge_loss, "recon_loss": recon_loss, "bm_loss": bm_loss})
+        train_mse += float(tmp_mse)
+        losscount += 1
+        wandb.log(
+            {
+                "train_loss": net_loss,
+                "ppedge_loss": ppedge_loss,
+                "recon_loss": recon_loss,
+                "bm_loss": bm_loss,
+            }
+        )
         if losscount % 50 == 0:
             img_sample = img_uv_c.detach().cpu().numpy()[0].transpose(1, 2, 0)
             img_dw_sample = img_uv_dw_c.detach().cpu().numpy()[0].transpose(1, 2, 0)
@@ -179,8 +195,28 @@ def train_epoch(
             image_pred = wandb.Image(img_pred_sample, caption=f"after_pred")
             wandb.log({"examples": [image, image_dw, image_pred]})
 
-        train_mse += float(tmp_mse)
-        losscount += 1
+        if args.data_to_use == "mixed_sep":
+            img_qb_c = img_qb.to(device, non_blocking=True)
+            net.zero_grad()
+            pred_bm = net(img_qb_c)
+            pred_bm = ((pred_bm / 288.0) - 0.5) * 2
+            # pred_img_dw = tensor_unwarping(img_qb_c, pred_bm)
+
+            perturb_fm, perturb_bm = warper_util.perturb_warp(pred_bm.size(0))
+            pertur_img = tensor_unwarping(img_qb_c, perturb_fm)
+            pred_perturb_bm = net(pertur_img.detach())
+            pred_perturb_bm = ((pred_perturb_bm / 288.0) - 0.5) * 2
+
+            ppedge_loss = local_loss.warp_diff_loss(
+                pred_bm, pred_perturb_bm, perturb_fm.detach(), perturb_bm.detach()
+            )
+            ppedge_loss.backward()
+            optimizer.step()
+            wandb.log(
+                {
+                    "real_ppedge_loss": ppedge_loss,
+                }
+            )
 
         gc.collect()
 
@@ -286,13 +322,13 @@ def basic_worker(args):
         val_sampler.set_epoch(epoch)
 
         train_mse, curr_lr = train_epoch(
+            args,
             epoch,
             train_loader,
             net,
             optimizer,
             lr_scheduler,
             device,
-            args.alpha_w,
             l1_loss,
             mse_loss,
             self_loss,
