@@ -59,13 +59,15 @@ class ImageInfo:
     @property
     def grid2D(self):
         if not os.path.exists(pjoin(self.dataroot, "metadata_sample")):
-            return np.array(h5.loadmat(self.bm_path)["grid2D"][:].T.transpose(2, 0, 1))
+            bm = h5.loadmat(self.bm_path)["grid2D"]
+            bm = resize_bm(bm, (89, 61)).transpose(2, 0, 1)
+            return bm
         with open(
             pjoin(self.dataroot, "metadata_sample", f"{self.sample_id}.json"), "r"
         ) as f:
             sample_name = json.load(f)["geom_name"]
         grid2D_path = pjoin(self.dataroot, "grid2d", f"{sample_name}.mat")
-        return np.array(h5.loadmat(grid2D_path)["grid2d"][:].T.transpose(2, 0, 1))
+        return h5.loadmat(grid2D_path)["grid2d"].transpose(2, 0, 1)
 
 
 def new_h_map(old_h, warped_box, cropped_box):
