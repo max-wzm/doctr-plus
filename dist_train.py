@@ -322,9 +322,8 @@ def basic_worker(args):
     lr_scheduler = get_lr_scheduler(optimizer, args, epoch_start)
 
     dist.barrier()
-
+    best_val_mse = 9999.0
     for epoch in range(epoch_start, args.n_epochs + args.n_epochs_decay + 1):
-        best_val_mse = 9999.0
 
         log(f"---- EPOCH {epoch} for rank {rank} ----")
         train_sampler.set_epoch(epoch)
