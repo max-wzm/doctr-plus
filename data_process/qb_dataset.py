@@ -77,7 +77,7 @@ class QbDataset(BaseDataset):
         if split == "val":
             self.all_samples = self.all_samples[train_ends:]
             self.all_samples = self.all_samples[:5000]
-        print("len of qbdataset", len(self.all_samples))
+        print("len of qbdataset", len(self.all_samples), split, total_num)
 
     def transform_image(self, img_RGB, grid2D):
         """
