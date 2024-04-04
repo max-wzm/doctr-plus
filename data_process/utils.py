@@ -32,7 +32,7 @@ class ImageInfo:
                 for x in os.listdir(pjoin(dataroot, "img"))
                 if x.endswith(suffix)
             ]
-            print("len of ", dataroot, len(all_samples), os.listdir(pjoin(dataroot, "img"))
+            print("len of ", dataroot, len(all_samples), os.listdir(pjoin(dataroot, "img")))
             random.shuffle(all_samples)
             all_samples = all_samples[:num]
             res.extend(all_samples)
