@@ -29,7 +29,7 @@ class MixedDataset(torch.utils.data.Dataset):
             geometric_augmentations=[],
             grid_size=grid_size,
             split=split,
-            total_num=[10000, 30000]
+            total_num=[0, 20000]
         )
         self.uv_dataset = UVDocDataset(
             uv_data_path,
