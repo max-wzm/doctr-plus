@@ -35,7 +35,7 @@ class ImageInfo:
             random.shuffle(all_samples)
             all_samples = all_samples[:num]
             res.extend(all_samples)
-        print("read from ",dataroots, len(all_samples))
+        print("read from ",dataroots, len(res))
         return res
 
     @property
