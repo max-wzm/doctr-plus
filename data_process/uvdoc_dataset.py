@@ -114,7 +114,9 @@ class UVDocDataset(BaseDataset):
         grid2D = image_info.grid2D
         # print(grid2D_.shape) # 2, 89, 61
 
-        img_RGB = cv2.imread(img_path)
+        img_RGB = np.array(cv2.imread(img_path))
+        if img_RGB is None:
+            raise TypeError(f"img from {img_path} is None")
         img_RGB, grid2D = self.transform_image(img_RGB, grid2D)
 
         h, w, _ = img_RGB.shape
