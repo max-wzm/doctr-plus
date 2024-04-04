@@ -296,7 +296,7 @@ def basic_worker(args):
     train_loader, val_loader, train_sampler, val_sampler = setup_data(args)
     net = GeoTr().to(device)
     optimizer = torch.optim.Adam(
-        net.parameters(), lr=args.lr * world_size, betas=(0.9, 0.999)
+        net.parameters(), lr=args.lr, betas=(0.9, 0.999)
     )
     net = torch.nn.SyncBatchNorm.convert_sync_batchnorm(net)
     net = torch.nn.parallel.DistributedDataParallel(
