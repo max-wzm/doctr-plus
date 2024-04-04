@@ -34,7 +34,7 @@ class ImageInfo:
             ]
             if len(all_samples) == 0:
                 print(os.listdir(pjoin(dataroot, "img")))
-                print("len of ", dataroot, len(all_samples), pjoin(dataroot, "img"))
+                print("len of ", dataroot, len(all_samples), suffix, pjoin(dataroot, "img"))
             random.shuffle(all_samples)
             all_samples = all_samples[:num]
             res.extend(all_samples)
