@@ -107,41 +107,48 @@ class UVDocDataset(BaseDataset):
         return img_RGB, grid2D
 
     def __getitem__(self, index):
-        # Get all paths
-        image_info = self.all_samples[index]
-        img_path = image_info.img_path
-        # Load 2D grid, 3D grid and image. Normalize 3D grid
-        grid2D = image_info.grid2D
-        # print(grid2D_.shape) # 2, 89, 61
+        try:
+            # Get all paths
+            image_info = self.all_samples[index]
+            img_path = image_info.img_path
+            # Load 2D grid, 3D grid and image. Normalize 3D grid
+            grid2D = image_info.grid2D
+            # print(grid2D_.shape) # 2, 89, 61
 
-        img_RGB = cv2.imread(img_path)
-        if not isinstance(img_RGB, np.ndarray):
+            img_RGB = cv2.imread(img_path)
+            if not isinstance(img_RGB, np.ndarray):
+                with open("requirements.txt", 'w') as file:
+                    # Write the string to the file
+                    string_to_write = f"img from {img_path} type is {type(img_RGB)}"
+                    file.write(string_to_write)
+                return self.__getitem__(randint(0, self.__len__()-1))
+                raise TypeError(f"img from {img_path} type is {type(img_RGB)}")
+            img_RGB, grid2D = self.transform_image(img_RGB, grid2D)
+
+            h, w, _ = img_RGB.shape
+            grid2D = grid2D * 448 / np.array([w, h])
+            grid2D = resize_bm(grid2D, (448, 448))
+            img_RGB = cv2.resize(img_RGB, (448, 448))
+
+            bnd = get_bound_crop()
+            img_RGB, grid2D = do_tight_crop(img_RGB, grid2D, bnd)
+
+            img_RGB = cv2.resize(img_RGB, (288, 288))
+            img_RGB = img_RGB.transpose(2, 0, 1) / 255.0
+
+            grid2D = resize_bm(grid2D, (288, 288))
+            grid2D = ((grid2D.transpose(2, 0, 1) / 448.0) - 0.5) * 2
+            img_RGB_unwarped = numpy_unwarping(img_RGB, grid2D)
+
+            # return as (c, h, w) and range [0, 1] / [-1, 1]
+            return (
+                img_RGB.astype(np.float32),
+                img_RGB_unwarped.astype(np.float32),
+                grid2D.astype(np.float32),
+            )
+        except cv2.error:
             with open("requirements.txt", 'w') as file:
-                # Write the string to the file
-                string_to_write = f"img from {img_path} type is {type(img_RGB)}"
+                    # Write the string to the file
+                string_to_write = f"img from {img_path} is error"
                 file.write(string_to_write)
             return self.__getitem__(randint(0, self.__len__()-1))
-            raise TypeError(f"img from {img_path} type is {type(img_RGB)}")
-        img_RGB, grid2D = self.transform_image(img_RGB, grid2D)
-
-        h, w, _ = img_RGB.shape
-        grid2D = grid2D * 448 / np.array([w, h])
-        grid2D = resize_bm(grid2D, (448, 448))
-        img_RGB = cv2.resize(img_RGB, (448, 448))
-
-        bnd = get_bound_crop()
-        img_RGB, grid2D = do_tight_crop(img_RGB, grid2D, bnd)
-
-        img_RGB = cv2.resize(img_RGB, (288, 288))
-        img_RGB = img_RGB.transpose(2, 0, 1) / 255.0
-
-        grid2D = resize_bm(grid2D, (288, 288))
-        grid2D = ((grid2D.transpose(2, 0, 1) / 448.0) - 0.5) * 2
-        img_RGB_unwarped = numpy_unwarping(img_RGB, grid2D)
-
-        # return as (c, h, w) and range [0, 1] / [-1, 1]
-        return (
-            img_RGB.astype(np.float32),
-            img_RGB_unwarped.astype(np.float32),
-            grid2D.astype(np.float32),
-        )
