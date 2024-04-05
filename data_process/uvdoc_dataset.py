@@ -116,13 +116,6 @@ class UVDocDataset(BaseDataset):
             # print(grid2D_.shape) # 2, 89, 61
 
             img_RGB = cv2.imread(img_path)
-            if not isinstance(img_RGB, np.ndarray):
-                with open("requirements.txt", 'w') as file:
-                    # Write the string to the file
-                    string_to_write = f"img from {img_path} type is {type(img_RGB)}"
-                    file.write(string_to_write)
-                return self.__getitem__(randint(0, self.__len__()-1))
-                raise TypeError(f"img from {img_path} type is {type(img_RGB)}")
             img_RGB, grid2D = self.transform_image(img_RGB, grid2D)
 
             h, w, _ = img_RGB.shape
