@@ -139,7 +139,8 @@ def train_epoch(
 ):
     net.train()
     alpha_w = args.alpha_w
-    beta_w = args.beta_w
+    beta_w = args.beta_w if epoch > args.ep_beta_start else 0
+    gamma_w = args.gamma_w if epoch > args.ep_gamma_start else 0
     losscount = 0
     train_mse = 0.0
     for batch in train_loader:
@@ -357,7 +358,6 @@ def basic_worker(args):
             state = {
                 "epoch": epoch + 1,
                 "model_state": net.state_dict(),
-                "optimizer_state": optimizer.state_dict(),
             }
             dir = "models/" + current_time + "/"
             if not os.path.exists(dir):
