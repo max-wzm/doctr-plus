@@ -197,7 +197,7 @@ def train_epoch(
             image_pred = wandb.Image(img_pred_sample, caption=f"after_pred")
             wandb.log({"examples": [image, image_dw, image_pred]})
 
-        if args.data_to_use == "mixed_sep":
+        if args.data_to_use == "mixed_sep" and epoch > args.ep_beta_start:
             img_qb_c = img_qb.to(device, non_blocking=True)
             net.zero_grad()
             pred_bm = net(img_qb_c)
