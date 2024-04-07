@@ -350,10 +350,7 @@ def basic_worker(args):
         wandb.log({"train_mse": train_mse})
         wandb.log({"val_mse": val_mse})
 
-        if rank == 0 and (
-            val_mse < best_val_mse or epoch == args.n_epochs + args.n_epochs_decay
-        ):
-            best_val_mse = val_mse
+        if rank == 0:
             # save
             state = {
                 "epoch": epoch + 1,
@@ -362,10 +359,11 @@ def basic_worker(args):
             dir = "models/" + current_time + "/"
             if not os.path.exists(dir):
                 os.makedirs(dir)
-            model_path = (
-                dir
-                + f"dist_ep_{epoch + 1}_{val_mse:.5f}_{train_mse:.5f}_best_model.pkl"
-            )
+            name = f"dist_ep_{epoch + 1}_{val_mse:.5f}_{train_mse:.5f}.pkl"
+            if val_mse < best_val_mse:
+                best_val_mse = val_mse
+                name = "best_model_" + name
+            model_path = dir + name
             torch.save(state, model_path)
         dist.barrier()
 
