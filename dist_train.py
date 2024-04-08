@@ -15,7 +15,7 @@ from data_process.utils import get_unwarp, tensor_unwarping
 from data_process.uvdoc_dataset import UVDocDataset
 from network.core_net import GeoTr
 from network.netloss import LocalLoss, WarperUtil
-
+from torch.cuda.amp import GradScaler as GradScaler
 os.environ["WANDB_API_KEY"] = "7974567f16cc72e73931e4bfb12c157156ab7109"
 gamma_w = 0.0
 
@@ -136,6 +136,7 @@ def train_epoch(
     l1_loss,
     mse_loss,
     local_loss: LocalLoss,
+    scaler,
 ):
     net.train()
     alpha_w = args.alpha_w
@@ -184,15 +185,19 @@ def train_epoch(
             else 0
         )
         net_loss = alpha_w * bm_loss + gamma_w * recon_loss + beta_w * ppedge_loss
-        net_loss.backward()
-        optimizer.step()
+        s_net_loss = scaler.scale(net_loss)
+        s_net_loss.backward()
+        # net_loss.backward()
+        # optimizer.step()
+        scaler.step(optimizer)
+        scaler.update()
 
         tmp_mse = mse_loss(pred_img_dw, img_uv_dw_c)
         train_mse += float(tmp_mse)
         losscount += 1
         wandb.log(
             {
-                "train_loss": net_loss,
+                "train_loss": s_net_loss,
                 "ppedge_loss": ppedge_loss,
                 "recon_loss": recon_loss,
                 "bm_loss": bm_loss,
@@ -224,8 +229,12 @@ def train_epoch(
             ppedge_loss = local_loss.warp_diff_loss(
                 pred_bm, pred_perturb_bm, perturb_fm.detach(), perturb_bm.detach()
             )
-            ppedge_loss.backward()
-            optimizer.step()
+            s_ppedge_loss = scaler.scale(ppedge_loss)
+            s_ppedge_loss.backward()
+            scaler.step(optimizer)
+            scaler.update()
+            # ppedge_loss.backward()
+            # optimizer.step()
             if losscount % 50 == 0:
                 img_sample = img_qb_c.detach().cpu().numpy()[0].transpose(1, 2, 0)
                 img_dw_sample = img_qb_dw.detach().cpu().numpy()[0].transpose(1, 2, 0)
@@ -333,7 +342,7 @@ def basic_worker(args):
     self_loss = LocalLoss().to(device)
 
     lr_scheduler = get_lr_scheduler(optimizer, args, epoch_start)
-
+    scaler = GradScaler()
     dist.barrier()
     best_val_mse = 9999.0
     for epoch in range(epoch_start, args.n_epochs + args.n_epochs_decay + 1):
@@ -353,6 +362,7 @@ def basic_worker(args):
             l1_loss,
             mse_loss,
             self_loss,
+            scaler,
         )
         log(f"TRAIN at EPOCH {epoch} ENS: train_mse = {train_mse}, curr_lr = {curr_lr}")
 
