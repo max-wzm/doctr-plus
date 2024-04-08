@@ -1,7 +1,7 @@
 import argparse
 import copy
 from typing import Optional
-
+from torch.cuda.amp import autocast
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -353,6 +353,7 @@ class GeoTr(nn.Module):
 
         return up_flow.reshape(N, 2, 8 * H, 8 * W)
 
+    @autocast()
     def forward(self, image1):
         fmap = self.fnet(image1)
         fmap = torch.relu(fmap)

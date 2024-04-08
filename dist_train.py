@@ -6,7 +6,7 @@ import torch
 import torch.distributed as dist
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
-
+from torch.cuda.amp import autocast
 import wandb
 from config import TrainConfig
 from data_process.mixed_dataset import MixedDataset, MixedSeperateDataset
@@ -139,6 +139,8 @@ def train_epoch(
 ):
     net.train()
     alpha_w = args.alpha_w
+    ppedge_enabled = epoch > args.ep_beta_start
+    recon_enabled = epoch > args.ep_gamma_start
     beta_w = args.beta_w if epoch > args.ep_beta_start else 0
     gamma_w = args.gamma_w if epoch > args.ep_gamma_start else 0
     losscount = 0
@@ -157,22 +159,29 @@ def train_epoch(
 
         # net input size is (b, 3, 288, 288)
         # net output size is (b, 2, 288, 288)
-        pred_bm = net(img_uv_c)
+        with autocast():
+            pred_bm = net(img_uv_c)
         pred_bm = ((pred_bm / 288.0) - 0.5) * 2
         pred_img_dw = tensor_unwarping(img_uv_c, pred_bm)
 
-        perturb_fm, perturb_bm = warper_util.perturb_warp(pred_bm.size(0))
-        pertur_img = tensor_unwarping(img_uv_c, perturb_fm)
-        pred_perturb_bm = net(pertur_img.detach())
-        pred_perturb_bm = ((pred_perturb_bm / 288.0) - 0.5) * 2
+        if ppedge_enabled:
+            perturb_fm, perturb_bm = warper_util.perturb_warp(pred_bm.size(0))
+            pertur_img = tensor_unwarping(img_uv_c, perturb_fm)
+            with autocast():
+                pred_perturb_bm = net(pertur_img.detach())
+            pred_perturb_bm = ((pred_perturb_bm / 288.0) - 0.5) * 2
 
         optimizer.zero_grad(set_to_none=True)
 
         mask = torch.logical_and(pred_img_dw, img_uv_dw_c)
         recon_loss = l1_loss(mask * pred_img_dw, mask * img_uv_dw_c)
         bm_loss = l1_loss(pred_bm, bm_c)
-        ppedge_loss = local_loss.warp_diff_loss(
-            pred_bm, pred_perturb_bm, perturb_fm.detach(), perturb_bm.detach()
+        ppedge_loss = (
+            local_loss.warp_diff_loss(
+                pred_bm, pred_perturb_bm, perturb_fm.detach(), perturb_bm.detach()
+            )
+            if ppedge_enabled
+            else 0
         )
         net_loss = alpha_w * bm_loss + gamma_w * recon_loss + beta_w * ppedge_loss
         net_loss.backward()
@@ -201,13 +210,15 @@ def train_epoch(
         if args.data_to_use == "mixed_sep" and epoch > args.ep_beta_start:
             img_qb_c = img_qb.to(device, non_blocking=True)
             net.zero_grad()
-            pred_bm = net(img_qb_c)
+            with autocast():
+                pred_bm = net(img_qb_c)
             pred_bm = ((pred_bm / 288.0) - 0.5) * 2
             pred_img_dw = tensor_unwarping(img_qb_c, pred_bm)
 
             perturb_fm, perturb_bm = warper_util.perturb_warp(pred_bm.size(0))
             pertur_img = tensor_unwarping(img_qb_c, perturb_fm)
-            pred_perturb_bm = net(pertur_img.detach())
+            with autocast():
+                pred_perturb_bm = net(pertur_img.detach())
             pred_perturb_bm = ((pred_perturb_bm / 288.0) - 0.5) * 2
 
             ppedge_loss = local_loss.warp_diff_loss(
@@ -218,7 +229,9 @@ def train_epoch(
             if losscount % 50 == 0:
                 img_sample = img_qb_c.detach().cpu().numpy()[0].transpose(1, 2, 0)
                 img_dw_sample = img_qb_dw.detach().cpu().numpy()[0].transpose(1, 2, 0)
-                img_pred_sample = pred_img_dw.detach().cpu().numpy()[0].transpose(1, 2, 0)
+                img_pred_sample = (
+                    pred_img_dw.detach().cpu().numpy()[0].transpose(1, 2, 0)
+                )
                 image = wandb.Image(img_sample, caption=f"real_ep{epoch}_before")
                 image_dw = wandb.Image(img_dw_sample, caption=f"real_after_gt")
                 image_pred = wandb.Image(img_pred_sample, caption=f"real_after_pred")
@@ -297,9 +310,7 @@ def basic_worker(args):
 
     train_loader, val_loader, train_sampler, val_sampler = setup_data(args)
     net = GeoTr().to(device)
-    optimizer = torch.optim.Adam(
-        net.parameters(), lr=args.lr, betas=(0.9, 0.999)
-    )
+    optimizer = torch.optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.999))
     net = torch.nn.SyncBatchNorm.convert_sync_batchnorm(net)
     net = torch.nn.parallel.DistributedDataParallel(
         net, device_ids=[rank], find_unused_parameters=True
