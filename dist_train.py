@@ -168,7 +168,8 @@ def train_epoch(
 
         optimizer.zero_grad(set_to_none=True)
 
-        recon_loss = l1_loss(pred_img_dw, img_uv_dw_c)
+        mask = torch.logical_and(pred_img_dw, img_uv_dw_c)
+        recon_loss = l1_loss(mask * pred_img_dw, mask * img_uv_dw_c)
         bm_loss = l1_loss(pred_bm, bm_c)
         ppedge_loss = local_loss.warp_diff_loss(
             pred_bm, pred_perturb_bm, perturb_fm.detach(), perturb_bm.detach()
