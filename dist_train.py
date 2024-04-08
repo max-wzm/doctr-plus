@@ -160,16 +160,15 @@ def train_epoch(
 
         # net input size is (b, 3, 288, 288)
         # net output size is (b, 2, 288, 288)
-        with autocast():
-            pred_bm = net(img_uv_c)
+        # with autocast():
+        pred_bm = net(img_uv_c)
         pred_bm = ((pred_bm / 288.0) - 0.5) * 2
         pred_img_dw = tensor_unwarping(img_uv_c, pred_bm)
 
         if ppedge_enabled:
             perturb_fm, perturb_bm = warper_util.perturb_warp(pred_bm.size(0))
             pertur_img = tensor_unwarping(img_uv_c, perturb_fm)
-            with autocast():
-                pred_perturb_bm = net(pertur_img.detach())
+            pred_perturb_bm = net(pertur_img.detach())
             pred_perturb_bm = ((pred_perturb_bm / 288.0) - 0.5) * 2
 
         optimizer.zero_grad(set_to_none=True)
@@ -185,19 +184,19 @@ def train_epoch(
             else 0
         )
         net_loss = alpha_w * bm_loss + gamma_w * recon_loss + beta_w * ppedge_loss
-        s_net_loss = scaler.scale(net_loss)
-        s_net_loss.backward()
-        # net_loss.backward()
-        # optimizer.step()
-        scaler.step(optimizer)
-        scaler.update()
+        # s_net_loss = scaler.scale(net_loss)
+        # s_net_loss.backward()
+        net_loss.backward()
+        optimizer.step()
+        # scaler.step(optimizer)
+        # scaler.update()
 
         tmp_mse = mse_loss(pred_img_dw, img_uv_dw_c)
         train_mse += float(tmp_mse)
         losscount += 1
         wandb.log(
             {
-                "train_loss": s_net_loss,
+                "train_loss": net_loss,
                 "ppedge_loss": ppedge_loss,
                 "recon_loss": recon_loss,
                 "bm_loss": bm_loss,
@@ -215,26 +214,25 @@ def train_epoch(
         if args.data_to_use == "mixed_sep" and epoch > args.ep_beta_start:
             img_qb_c = img_qb.to(device, non_blocking=True)
             net.zero_grad()
-            with autocast():
-                pred_bm = net(img_qb_c)
+            # with autocast():
+            pred_bm = net(img_qb_c)
             pred_bm = ((pred_bm / 288.0) - 0.5) * 2
             pred_img_dw = tensor_unwarping(img_qb_c, pred_bm)
 
             perturb_fm, perturb_bm = warper_util.perturb_warp(pred_bm.size(0))
             pertur_img = tensor_unwarping(img_qb_c, perturb_fm)
-            with autocast():
-                pred_perturb_bm = net(pertur_img.detach())
+            pred_perturb_bm = net(pertur_img.detach())
             pred_perturb_bm = ((pred_perturb_bm / 288.0) - 0.5) * 2
 
             ppedge_loss = local_loss.warp_diff_loss(
                 pred_bm, pred_perturb_bm, perturb_fm.detach(), perturb_bm.detach()
             )
-            s_ppedge_loss = scaler.scale(ppedge_loss)
-            s_ppedge_loss.backward()
-            scaler.step(optimizer)
-            scaler.update()
-            # ppedge_loss.backward()
-            # optimizer.step()
+            # s_ppedge_loss = scaler.scale(ppedge_loss)
+            # s_ppedge_loss.backward()
+            # scaler.step(optimizer)
+            # scaler.update()
+            ppedge_loss.backward()
+            optimizer.step()
             if losscount % 50 == 0:
                 img_sample = img_qb_c.detach().cpu().numpy()[0].transpose(1, 2, 0)
                 img_dw_sample = img_qb_dw.detach().cpu().numpy()[0].transpose(1, 2, 0)
