@@ -163,7 +163,7 @@ def train_epoch(
         # with autocast():
         pred_bm = net(img_uv_c)
         pred_bm = ((pred_bm / 288.0) - 0.5) * 2
-        # pred_img_dw = tensor_unwarping(img_uv_c, pred_bm)
+        pred_img_dw = tensor_unwarping(img_uv_c, pred_bm)
 
         if ppedge_enabled:
             perturb_fm, perturb_bm = warper_util.perturb_warp(pred_bm.size(0))
@@ -199,7 +199,7 @@ def train_epoch(
             {
                 "train_loss": net_loss,
                 "ppedge_loss": ppedge_loss,
-                "recon_loss": recon_loss,
+                # "recon_loss": recon_loss,
                 "bm_loss": bm_loss,
             }
         )
