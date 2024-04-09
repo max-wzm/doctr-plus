@@ -59,7 +59,7 @@ class UVDocDataset(BaseDataset):
         grid_size=GRID_SIZE,
         split="train",
         train_ratio=0.9,
-        total_num=[20000, 30000],
+        total_num=[20000, 20000],
     ) -> None:
         super().__init__(
             appearance_augmentation=appearance_augmentation,
