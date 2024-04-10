@@ -26,10 +26,10 @@ class MixedDataset(torch.utils.data.Dataset):
             qb_data_path,
             real_suffix,
             appearance_augmentation=appearance_augmentation,
-            geometric_augmentations=geometric_augmentations,
+            geometric_augmentations=[],
             grid_size=grid_size,
             split=split,
-            total_num=[10000, 30000],
+            total_num=[20000, 30000],
         )
         self.uv_dataset = UVDocDataset(
             uv_data_path,
@@ -64,7 +64,7 @@ class MixedSeperateDataset(MixedDataset):
         super().__init__()
         self.qb_dataset = QbDataset(
             appearance_augmentation=appearance_augmentation,
-            geometric_augmentations=geometric_augmentations,
+            geometric_augmentations=[],
             grid_size=grid_size,
             split=split,
             total_num=[30000, 20000],

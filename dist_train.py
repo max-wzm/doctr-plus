@@ -264,7 +264,7 @@ def eval_epoch(epoch, val_loader, net, device, mse_loss):
     with torch.no_grad():
         mse_loss_val = 0.0
         for batch in val_loader:
-            img, img_dw, bm = batch
+            img, img_dw, bm = batch[0]
             img = img.to(device)
             img_dw = img_dw.to(device)
 
