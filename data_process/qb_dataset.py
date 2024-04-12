@@ -128,7 +128,7 @@ class QbDataset(BaseDataset):
         img_RGB = cv2.resize(img_RGB, (288, 288))
         img_RGB = img_RGB.transpose(2, 0, 1) / 255.0
         if not bm_path:
-            return img_RGB.astype(np.float32), None, None
+            return img_RGB.astype(np.float32), np.random.randn(3, 288, 288), np.random.randn(2, 288, 288)
         bm = resize_bm(bm, (288, 288))
         bm = ((bm.transpose(2, 0, 1) / 448.0) - 0.5) * 2
         img_RGB_unwarped = numpy_unwarping(img_RGB, bm)
