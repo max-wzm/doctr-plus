@@ -19,7 +19,7 @@ def trigger(prob):
 def get_bound_crop():
     bound = (0, 448, 0, 448)
     # return bound
-    if trigger(0.6):
+    if trigger(0.9):
         return bound
 
     h, w = randint(2, 3), randint(2, 3)
@@ -111,9 +111,11 @@ class QbDataset(BaseDataset):
         bm_path = image_info.bm_path
 
         img_RGB = cv2.imread(img_path)
-        bm = h5.loadmat(bm_path)["bm"]
+        if not bm_path:
+            bm = np.indices((448, 448)).transpose(2, 1, 0)
+        else:
+            bm = h5.loadmat(bm_path)["bm"]
         bm = resize_bm(bm, (89, 61)).transpose(2, 0, 1)
-
         img_RGB, bm = self.transform_image(img_RGB, bm)
         h, w, _ = img_RGB.shape
         bm = bm * 448 / np.array([w, h])
@@ -125,7 +127,8 @@ class QbDataset(BaseDataset):
 
         img_RGB = cv2.resize(img_RGB, (288, 288))
         img_RGB = img_RGB.transpose(2, 0, 1) / 255.0
-
+        if not bm_path:
+            return img_RGB.astype(np.float32), None, None
         bm = resize_bm(bm, (288, 288))
         bm = ((bm.transpose(2, 0, 1) / 448.0) - 0.5) * 2
         img_RGB_unwarped = numpy_unwarping(img_RGB, bm)

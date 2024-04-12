@@ -225,7 +225,7 @@ def train_epoch(
             pred_perturb_bm = net(pertur_img.detach())
             pred_perturb_bm = ((pred_perturb_bm / 288.0) - 0.5) * 2
 
-            ppedge_loss = local_loss.warp_diff_loss(
+            ppedge_loss = beta_w * local_loss.warp_diff_loss(
                 pred_bm, pred_perturb_bm, perturb_fm.detach(), perturb_bm.detach()
             )
             # s_ppedge_loss = scaler.scale(ppedge_loss)
@@ -236,7 +236,7 @@ def train_epoch(
             optimizer.step()
             if losscount % 50 == 0:
                 img_sample = img_qb_c.detach().cpu().numpy()[0].transpose(1, 2, 0)
-                img_dw_sample = img_qb_dw.detach().cpu().numpy()[0].transpose(1, 2, 0)
+                img_dw_sample = img_qb_dw.detach().cpu().numpy()[0].transpose(1, 2, 0) if img_qb_dw else img_sample
                 img_pred_sample = (
                     pred_img_dw.detach().cpu().numpy()[0].transpose(1, 2, 0)
                 )

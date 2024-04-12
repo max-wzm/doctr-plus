@@ -53,7 +53,8 @@ class ImageInfo:
 
     @property
     def bm_path(self):
-        return pjoin(self.dataroot, "bm", f"{self.sample_id}.mat")
+        bp = pjoin(self.dataroot, "bm", f"{self.sample_id}.mat")
+        return bp if os.path.exists(bp) else None
 
     @property
     def grid2D_path(self):
@@ -125,10 +126,10 @@ def crop_image_tight(img, grid2D, cropped_box):
     miny = np.floor(np.amin(grid2D[:, :, 1])).astype(int)
     maxy = np.ceil(np.amax(grid2D[:, :, 1])).astype(int)
 
-    top = max(0, miny + random.randint(-5, 5))
-    bot = min(448, maxy + random.randint(-5, 5))
-    left = max(0, minx + random.randint(-5, 5))
-    right = min(448, maxx + random.randint(-5, 5))
+    top = max(0, miny + random.randint(-5, 10))
+    bot = min(448, maxy + random.randint(-10, 5))
+    left = max(0, minx + random.randint(-5, 10))
+    right = min(448, maxx + random.randint(-10, 5))
     return (top, bot, left, right)
 
 
