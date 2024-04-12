@@ -236,7 +236,7 @@ def train_epoch(
             optimizer.step()
             if losscount % 50 == 0:
                 img_sample = img_qb_c.detach().cpu().numpy()[0].transpose(1, 2, 0)
-                img_dw_sample = img_qb_dw.detach().cpu().numpy()[0].transpose(1, 2, 0) if img_qb_dw else img_sample
+                img_dw_sample = img_qb_dw.detach().cpu().numpy()[0].transpose(1, 2, 0)
                 img_pred_sample = (
                     pred_img_dw.detach().cpu().numpy()[0].transpose(1, 2, 0)
                 )
