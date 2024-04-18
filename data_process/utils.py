@@ -12,7 +12,8 @@ from matplotlib import pyplot as plt
 
 RANGE_H = (0, 288)
 RANGE_W = (0, 288)
-
+UV_GRID_SIZE=(45, 31)
+UV_IMG_SIZE=(488, 712)
 
 class ImageInfo:
     def __init__(self, dataroot, sample_id, suffix) -> None:
@@ -138,7 +139,6 @@ def mapping(value, a, b, c, d):
     mapped_value = (value - a) * (d - c) / (b - a) + c
     return mapped_value
 
-
 def get_unwarp(alb, bm):
     """
     get unwarped image
@@ -179,7 +179,7 @@ def tensor_unwarping(warped_imgs, bms, size=(288, 288)):
         point_positions:    torch.Tensor of shape Bx2xGhxGw (dtype float)
         img_size:           tuple of int [w, h]
     """
-    upsampled_grid = F.interpolate(bms, size=size, mode="bilinear", align_corners=True)
+    upsampled_grid = F.interpolate(bms, size=(size[1], size[0]), mode="bilinear", align_corners=True)
     unwarped_img = F.grid_sample(
         warped_imgs, upsampled_grid.transpose(1, 2).transpose(2, 3), align_corners=True
     )

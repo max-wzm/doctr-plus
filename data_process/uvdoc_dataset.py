@@ -1,19 +1,13 @@
-import json
-import math
-import os
 import random
 import warnings
-from os.path import join as pjoin
 from random import randint
 
 import cv2
-import h5py as h5
 import numpy as np
-import torch
 
 from data_process import GRID_SIZE, IMG_SIZE
 from data_process.base import BaseDataset, get_geometric_transform
-from data_process.utils import ImageInfo, do_tight_crop, numpy_unwarping, resize_bm
+from data_process.utils import UV_GRID_SIZE, UV_IMG_SIZE, ImageInfo, do_tight_crop, numpy_unwarping, resize_bm
 
 
 def trigger(prob):
@@ -80,6 +74,8 @@ class UVDocDataset(BaseDataset):
             self.all_samples = self.all_samples[:train_ends]
         if split == "val":
             self.all_samples = self.all_samples[train_ends:]
+        self.out_img_size = UV_IMG_SIZE
+        self.out_bm_size = UV_GRID_SIZE
 
     def transform_image(self, img_RGB, grid2D):
         """
@@ -132,12 +128,14 @@ class UVDocDataset(BaseDataset):
             bnd = get_bound_crop()
             img_RGB, grid2D = do_tight_crop(img_RGB, grid2D, bnd)
 
-            img_RGB = cv2.resize(img_RGB, (288, 288))
+            # img_RGB = cv2.resize(img_RGB, (288, 288))
+            img_RGB = cv2.resize(img_RGB, self.out_img_size)
             img_RGB = img_RGB.transpose(2, 0, 1) / 255.0
 
-            grid2D = resize_bm(grid2D, (288, 288))
+            # grid2D = resize_bm(grid2D, (288, 288))
+            grid2D = resize_bm(grid2D, self.out_bm_size)
             grid2D = ((grid2D.transpose(2, 0, 1) / 448.0) - 0.5) * 2
-            img_RGB_unwarped = numpy_unwarping(img_RGB, grid2D)
+            img_RGB_unwarped = numpy_unwarping(img_RGB, grid2D, self.out_img_size)
 
             # return as (c, h, w) and range [0, 1] / [-1, 1]
             return (

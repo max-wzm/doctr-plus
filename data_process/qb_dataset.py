@@ -9,7 +9,7 @@ import numpy as np
 
 from data_process import GRID_SIZE, IMG_SIZE
 from data_process.base import BaseDataset, get_geometric_transform
-from data_process.utils import ImageInfo, do_tight_crop, numpy_unwarping, resize_bm
+from data_process.utils import UV_GRID_SIZE, UV_IMG_SIZE, ImageInfo, do_tight_crop, numpy_unwarping, resize_bm
 
 
 def trigger(prob):
@@ -78,6 +78,8 @@ class QbDataset(BaseDataset):
             self.all_samples = self.all_samples[train_ends:]
             self.all_samples = self.all_samples[:5000]
         print("len of qbdataset", len(self.all_samples), split, total_num)
+        self.out_img_size = UV_IMG_SIZE
+        self.out_bm_size = UV_GRID_SIZE
 
     def transform_image(self, img_RGB, grid2D):
         """
@@ -125,13 +127,13 @@ class QbDataset(BaseDataset):
         bnd = get_bound_crop()
         img_RGB, bm = do_tight_crop(img_RGB, bm, bnd)
 
-        img_RGB = cv2.resize(img_RGB, (288, 288))
+        img_RGB = cv2.resize(img_RGB, self.out_img_size)
         img_RGB = img_RGB.transpose(2, 0, 1) / 255.0
         if not bm_path:
-            return img_RGB.astype(np.float32), np.random.randn(3, 288, 288), np.random.randn(2, 288, 288)
-        bm = resize_bm(bm, (288, 288))
+            return img_RGB.astype(np.float32), np.random.randn(3, *self.out_img_size), np.random.randn(2, *self.out_bm_size)
+        bm = resize_bm(bm, self.out_bm_size)
         bm = ((bm.transpose(2, 0, 1) / 448.0) - 0.5) * 2
-        img_RGB_unwarped = numpy_unwarping(img_RGB, bm)
+        img_RGB_unwarped = numpy_unwarping(img_RGB, bm, self.out_img_size)
 
         # return as (c, h, w) and range [0, 1] / [-1, 1]
         return (
