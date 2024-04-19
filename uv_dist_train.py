@@ -203,14 +203,14 @@ def eval_epoch(epoch, val_loader, net, device, mse_loss):
     with torch.no_grad():
         mse_loss_val = 0.0
         for batch in val_loader:
-            img, img_dw, bm = batch[0]
+            img, img_dw, bm = batch
             img = img.to(device)
             img_dw = img_dw.to(device)
 
             pred_bm = net(img)
             # if pred_bm.max() > 2:
             #     pred_bm = ((pred_bm / 288.0) - 0.5) * 2
-            pred_img_dw = tensor_unwarping(img, pred_bm)
+            pred_img_dw = tensor_unwarping(img, pred_bm, (712, 488))
 
             loss_img_val = mse_loss(img_dw, pred_img_dw)
             mse_loss_val += float(loss_img_val)
