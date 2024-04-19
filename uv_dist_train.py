@@ -261,7 +261,7 @@ def basic_worker(args):
     optimizer = torch.optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.999))
     net = torch.nn.SyncBatchNorm.convert_sync_batchnorm(net)
     net = torch.nn.parallel.DistributedDataParallel(
-        net, device_ids=[rank], find_unused_parameters=True
+        net, device_ids=[rank]
     )
     epoch_start = 0
     global gamma_w
