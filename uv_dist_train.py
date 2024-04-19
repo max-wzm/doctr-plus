@@ -176,7 +176,7 @@ def train_epoch(
         wandb.log(
             {
                 "train_loss": net_loss,
-                # "recon_loss": recon_loss,
+                "recon_loss": recon_loss,
                 "bm_loss": bm_loss,
             }
         )
