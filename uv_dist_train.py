@@ -4,8 +4,10 @@ from datetime import datetime
 
 import torch
 import torch.distributed as dist
+from torch.cuda.amp import GradScaler as GradScaler
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
+
 import wandb
 from config import TrainConfig
 from data_process.mixed_dataset import MixedDataset, MixedSeperateDataset
@@ -13,9 +15,8 @@ from data_process.qb_dataset import QbDataset
 from data_process.utils import UV_IMG_SIZE, get_unwarp, tensor_unwarping
 from data_process.uvdoc_dataset import UVDocDataset
 from network.netloss import LocalLoss, WarperUtil
-from torch.cuda.amp import GradScaler as GradScaler
-
 from uvnet.model import UVDocnet
+
 os.environ["WANDB_API_KEY"] = "7974567f16cc72e73931e4bfb12c157156ab7109"
 gamma_w = 0.0
 
@@ -180,7 +181,7 @@ def train_epoch(
                 "bm_loss": bm_loss,
             }
         )
-        if losscount % 50 == 0:
+        if losscount % 30 == 0:
             img_sample = img_uv_c.detach().cpu().numpy()[0].transpose(1, 2, 0)
             img_dw_sample = img_uv_dw_c.detach().cpu().numpy()[0].transpose(1, 2, 0)
             img_pred_sample = pred_img_dw.detach().cpu().numpy()[0].transpose(1, 2, 0)
