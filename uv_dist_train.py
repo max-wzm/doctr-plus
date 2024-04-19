@@ -10,7 +10,7 @@ import wandb
 from config import TrainConfig
 from data_process.mixed_dataset import MixedDataset, MixedSeperateDataset
 from data_process.qb_dataset import QbDataset
-from data_process.utils import get_unwarp, tensor_unwarping
+from data_process.utils import UV_IMG_SIZE, get_unwarp, tensor_unwarping
 from data_process.uvdoc_dataset import UVDocDataset
 from network.netloss import LocalLoss, WarperUtil
 from torch.cuda.amp import GradScaler as GradScaler
@@ -140,7 +140,8 @@ def train_epoch(
 ):
     net.train()
     alpha_w = args.alpha_w
-    ppedge_enabled = epoch > args.ep_beta_start
+    # ppedge_enabled = epoch > args.ep_beta_start
+    ppedge_enabled = False
     recon_enabled = epoch > args.ep_gamma_start
     beta_w = args.beta_w if epoch > args.ep_beta_start else 0
     gamma_w = args.gamma_w if epoch > args.ep_gamma_start else 0
@@ -158,39 +159,16 @@ def train_epoch(
         img_uv_dw_c = img_uv_dw.to(device, non_blocking=True)
         bm_c = bm.to(device, non_blocking=True)
 
-        # net input size is (b, 3, 288, 288)
-        # net output size is (b, 2, 288, 288)
-        # with autocast():
         pred_bm = net(img_uv_c)
-        # pred_bm = ((pred_bm / 288.0) - 0.5) * 2
-        pred_img_dw = tensor_unwarping(img_uv_c, pred_bm)
-
-        if ppedge_enabled:
-            perturb_fm, perturb_bm = warper_util.perturb_warp(pred_bm.size(0))
-            pertur_img = tensor_unwarping(img_uv_c, perturb_fm)
-            pred_perturb_bm = net(pertur_img.detach())
-            # pred_perturb_bm = ((pred_perturb_bm / 288.0) - 0.5) * 2
-
+        pred_img_dw = tensor_unwarping(img_uv_c, pred_bm, (712, 488))
         optimizer.zero_grad(set_to_none=True)
 
-        # mask = torch.logical_and(pred_img_dw, img_uv_dw_c)
-        # recon_loss = l1_loss(mask * pred_img_dw, mask * img_uv_dw_c)
-        recon_loss = 0
+        mask = torch.logical_and(pred_img_dw, img_uv_dw_c)
+        recon_loss = l1_loss(mask * pred_img_dw, mask * img_uv_dw_c) if recon_enabled else 0
         bm_loss = l1_loss(pred_bm, bm_c)
-        ppedge_loss = (
-            local_loss.warp_diff_loss(
-                pred_bm, pred_perturb_bm, perturb_fm.detach(), perturb_bm.detach()
-            )
-            if ppedge_enabled
-            else 0
-        )
-        net_loss = alpha_w * bm_loss + gamma_w * recon_loss + beta_w * ppedge_loss
-        # s_net_loss = scaler.scale(net_loss)
-        # s_net_loss.backward()
+        net_loss = alpha_w * bm_loss + gamma_w * recon_loss
         net_loss.backward()
         optimizer.step()
-        # scaler.step(optimizer)
-        # scaler.update()
 
         tmp_mse = mse_loss(pred_img_dw, img_uv_dw_c)
         train_mse += float(tmp_mse)
@@ -198,7 +176,6 @@ def train_epoch(
         wandb.log(
             {
                 "train_loss": net_loss,
-                "ppedge_loss": ppedge_loss,
                 # "recon_loss": recon_loss,
                 "bm_loss": bm_loss,
             }
@@ -211,44 +188,6 @@ def train_epoch(
             image_dw = wandb.Image(img_dw_sample, caption=f"after_gt")
             image_pred = wandb.Image(img_pred_sample, caption=f"after_pred")
             wandb.log({"examples": [image, image_dw, image_pred]})
-
-        if args.data_to_use == "mixed_sep" and epoch > args.ep_beta_start:
-            img_qb_c = img_qb.to(device, non_blocking=True)
-            net.zero_grad()
-            # with autocast():
-            pred_bm = net(img_qb_c)
-            # pred_bm = ((pred_bm / 288.0) - 0.5) * 2
-            pred_img_dw = tensor_unwarping(img_qb_c, pred_bm)
-
-            perturb_fm, perturb_bm = warper_util.perturb_warp(pred_bm.size(0))
-            pertur_img = tensor_unwarping(img_qb_c, perturb_fm)
-            pred_perturb_bm = net(pertur_img.detach())
-            # pred_perturb_bm = ((pred_perturb_bm / 288.0) - 0.5) * 2
-
-            ppedge_loss = beta_w * local_loss.warp_diff_loss(
-                pred_bm, pred_perturb_bm, perturb_fm.detach(), perturb_bm.detach()
-            )
-            # s_ppedge_loss = scaler.scale(ppedge_loss)
-            # s_ppedge_loss.backward()
-            # scaler.step(optimizer)
-            # scaler.update()
-            ppedge_loss.backward()
-            optimizer.step()
-            if losscount % 50 == 0:
-                img_sample = img_qb_c.detach().cpu().numpy()[0].transpose(1, 2, 0)
-                img_dw_sample = img_qb_dw.detach().cpu().numpy()[0].transpose(1, 2, 0)
-                img_pred_sample = (
-                    pred_img_dw.detach().cpu().numpy()[0].transpose(1, 2, 0)
-                )
-                image = wandb.Image(img_sample, caption=f"real_ep{epoch}_before")
-                image_dw = wandb.Image(img_dw_sample, caption=f"real_after_gt")
-                image_pred = wandb.Image(img_pred_sample, caption=f"real_after_pred")
-                wandb.log({"Real": [image, image_dw, image_pred]})
-            wandb.log(
-                {
-                    "real_ppedge_loss": ppedge_loss,
-                }
-            )
 
         gc.collect()
 
@@ -289,7 +228,7 @@ def load_model(path, net, optimizer, device):
     # print(checkpoint["model_state"])
     model_state = checkpoint["model_state"]
     if not list(model_state.keys())[0].startswith("module."):
-        model_state = {"module." + k: v for k, v in model_state.items()}
+        model_state = {"module." + k: v for k, v in model_state.items() if not "out_point_positions3D" in k}
     net.load_state_dict(model_state)
     # optimizer.load_state_dict(checkpoint["optimizer_state"])
     log("Loaded checkpoint '{}' (epoch {})".format(path, checkpoint["epoch"]))
@@ -318,7 +257,7 @@ def basic_worker(args):
 
     train_loader, val_loader, train_sampler, val_sampler = setup_data(args)
     # net = GeoTr().to(device)
-    net = UVDocnet().to(device)
+    net = UVDocnet(num_filter=32, kernel_size=5).to(device)
     optimizer = torch.optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.999))
     net = torch.nn.SyncBatchNorm.convert_sync_batchnorm(net)
     net = torch.nn.parallel.DistributedDataParallel(

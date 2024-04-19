@@ -170,7 +170,7 @@ def get_unwarp(alb, bm):
     return uw
 
 
-def tensor_unwarping(warped_imgs, bms, size=(288, 288)):
+def tensor_unwarping(warped_imgs, bms, size=(712, 488)):
     """
     Utility function that unwarps an image.
     Unwarp warped_img based on the 2D grid point_positions with a size img_size.
@@ -179,7 +179,8 @@ def tensor_unwarping(warped_imgs, bms, size=(288, 288)):
         point_positions:    torch.Tensor of shape Bx2xGhxGw (dtype float)
         img_size:           tuple of int [w, h]
     """
-    upsampled_grid = F.interpolate(bms, size=(size[1], size[0]), mode="bilinear", align_corners=True)
+    upsampled_grid = F.interpolate(bms, size=size, mode="bilinear", align_corners=True)
+    # upsampled_grid = bms
     unwarped_img = F.grid_sample(
         warped_imgs, upsampled_grid.transpose(1, 2).transpose(2, 3), align_corners=True
     )

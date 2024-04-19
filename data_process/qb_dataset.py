@@ -133,7 +133,7 @@ class QbDataset(BaseDataset):
             return img_RGB.astype(np.float32), np.random.randn(3, *self.out_img_size), np.random.randn(2, *self.out_bm_size)
         bm = resize_bm(bm, self.out_bm_size)
         bm = ((bm.transpose(2, 0, 1) / 448.0) - 0.5) * 2
-        img_RGB_unwarped = numpy_unwarping(img_RGB, bm, self.out_img_size)
+        img_RGB_unwarped = numpy_unwarping(img_RGB, bm, (712, 488))
 
         # return as (c, h, w) and range [0, 1] / [-1, 1]
         return (
