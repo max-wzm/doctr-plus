@@ -22,7 +22,7 @@ def trigger(prob):
 
 def get_bound_crop():
     bound = (0, 448, 0, 448)
-    if trigger(0.6):
+    if trigger(0.8):
         return bound
 
     h, w = randint(2, 3), randint(2, 3)
@@ -59,7 +59,7 @@ class UVDocDataset(BaseDataset):
         grid_size=GRID_SIZE,
         split="train",
         train_ratio=0.8,
-        total_num=[20000, 60000],
+        total_num=[15000, 15000],
     ) -> None:
         super().__init__(
             appearance_augmentation=appearance_augmentation,

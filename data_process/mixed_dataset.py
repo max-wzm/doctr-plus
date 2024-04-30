@@ -12,8 +12,8 @@ class MixedDataset(torch.utils.data.Dataset):
 
     def __init__(
         self,
-        qb_data_path=["./data/QBdoc2", "./data/QBdoc3"],
-        real_suffix=["jpg", "jpg"],
+        qb_data_path=["./data/QBdoc5", "./data/QBdoc3"],
+        real_suffix=["png", "jpg"],
         uv_data_path=["./data/UVdoc", "./data/doc3"],
         syn_suffix=["png", "png"],
         appearance_augmentation=[],
@@ -29,7 +29,7 @@ class MixedDataset(torch.utils.data.Dataset):
             geometric_augmentations=geometric_augmentations,
             grid_size=grid_size,
             split=split,
-            total_num=[30000, 30000],
+            total_num=[20000, 20000],
         )
         self.uv_dataset = UVDocDataset(
             uv_data_path,
@@ -63,13 +63,13 @@ class MixedSeperateDataset(MixedDataset):
     ) -> None:
         super().__init__()
         self.qb_dataset = QbDataset(
-            qb_data_path=["./data/QBdoc", "./data/QBdoc2", "./data/QBdoc3", "./data/QBdoc4"],
-            real_suffix= ["jpg"] * 4,
+            qb_data_path=["./data/QBdoc4", "./data/QBdoc2", "./data/QBdoc3", "./data/QBdoc5"],
+            real_suffix= ["jpg"] * 3 + ["png"],
             appearance_augmentation=appearance_augmentation,
             geometric_augmentations=geometric_augmentations,
             grid_size=grid_size,
             split=split,
-            total_num=[15000, 20000, 20000, 30000],
+            total_num=[5000, 5000, 5000, 30000],
         )
         self.uv_dataset = MixedDataset(
             appearance_augmentation=appearance_augmentation,
