@@ -199,11 +199,11 @@ def train_epoch(
             {
                 "train_loss": net_loss,
                 "ppedge_loss": ppedge_loss,
-                # "recon_loss": recon_loss,
+                "recon_loss": recon_loss,
                 "bm_loss": bm_loss,
             }
         )
-        if losscount % 50 == 0:
+        if losscount % 30 == 0:
             img_sample = img_uv_c.detach().cpu().numpy()[0].transpose(1, 2, 0)
             img_dw_sample = img_uv_dw_c.detach().cpu().numpy()[0].transpose(1, 2, 0)
             img_pred_sample = pred_img_dw.detach().cpu().numpy()[0].transpose(1, 2, 0)
