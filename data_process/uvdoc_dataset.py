@@ -132,10 +132,10 @@ class UVDocDataset(BaseDataset):
             bnd = get_bound_crop()
             img_RGB, grid2D = do_tight_crop(img_RGB, grid2D, bnd)
 
-            img_RGB = cv2.resize(img_RGB, (288, 288))
+            img_RGB = cv2.resize(img_RGB, (256, 256))
             img_RGB = img_RGB.transpose(2, 0, 1) / 255.0
 
-            grid2D = resize_bm(grid2D, (288, 288))
+            grid2D = resize_bm(grid2D, (256, 256))
             grid2D = ((grid2D.transpose(2, 0, 1) / 448.0) - 0.5) * 2
             img_RGB_unwarped = numpy_unwarping(img_RGB, grid2D)
 
