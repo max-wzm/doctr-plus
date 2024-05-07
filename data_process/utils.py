@@ -190,7 +190,7 @@ def tensor_unwarping(warped_imgs, bms, size=(256, 256)):
 def numpy_unwarping(warped_img, bm, size=(288, 288)):
     warped_tensor = torch.from_numpy(warped_img).float().unsqueeze(0)
     bm_tensor = torch.from_numpy(bm).float().unsqueeze(0)
-    unwarped_tensor = tensor_unwarping(warped_tensor, bm_tensor, size)
+    unwarped_tensor, _ = tensor_unwarping(warped_tensor, bm_tensor, size)
     return unwarped_tensor[0].numpy()
 
 
