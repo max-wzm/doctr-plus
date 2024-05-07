@@ -137,7 +137,7 @@ class UVDocDataset(BaseDataset):
 
             grid2D = resize_bm(grid2D, (256, 256))
             grid2D = ((grid2D.transpose(2, 0, 1) / 448.0) - 0.5) * 2
-            img_RGB_unwarped = numpy_unwarping(img_RGB, grid2D)
+            img_RGB_unwarped = numpy_unwarping(img_RGB, grid2D, (256, 256))
 
             # return as (c, h, w) and range [0, 1] / [-1, 1]
             return (
