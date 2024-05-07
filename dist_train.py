@@ -274,14 +274,14 @@ def load_model(path, net, optimizer, device):
     log("Loading model and optimizer from checkpoint '{}'".format(path))
     checkpoint = torch.load(path, map_location=device)
     # print(checkpoint["model_state"])
-    model_state = checkpoint["model_state"]
+    # net.load_state_dict(torch.load(args.Enet_ckpt)['G'])
+    model_state = checkpoint["G"]
     if not list(model_state.keys())[0].startswith("module."):
         model_state = {"module." + k: v for k, v in model_state.items()}
     net.load_state_dict(model_state)
     # optimizer.load_state_dict(checkpoint["optimizer_state"])
-    log("Loaded checkpoint '{}' (epoch {})".format(path, checkpoint["epoch"]))
-    epoch_start = checkpoint["epoch"]
-    return net, optimizer, epoch_start
+    # log("Loaded checkpoint '{}' (epoch {})".format(path, checkpoint["epoch"]))
+    return net, optimizer, 0
 
 
 def basic_worker(args):
@@ -362,7 +362,7 @@ def basic_worker(args):
             # save
             state = {
                 "epoch": epoch + 1,
-                "model_state": net.state_dict(),
+                "G": net.state_dict(),
             }
             dir = "models/" + current_time + "/"
             if not os.path.exists(dir):
