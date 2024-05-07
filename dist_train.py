@@ -185,12 +185,8 @@ def train_epoch(
             else 0
         )
         net_loss = alpha_w * bm_loss + gamma_w * recon_loss + beta_w * ppedge_loss
-        # s_net_loss = scaler.scale(net_loss)
-        # s_net_loss.backward()
         net_loss.backward()
         optimizer.step()
-        # scaler.step(optimizer)
-        # scaler.update()
 
         tmp_mse = mse_loss(pred_img_dw, img_uv_dw_c)
         train_mse += float(tmp_mse)
@@ -228,10 +224,6 @@ def train_epoch(
             ppedge_loss = beta_w * local_loss.warp_diff_loss(
                 pred_bm, pred_perturb_bm, perturb_fm.detach(), perturb_bm.detach()
             )
-            # s_ppedge_loss = scaler.scale(ppedge_loss)
-            # s_ppedge_loss.backward()
-            # scaler.step(optimizer)
-            # scaler.update()
             ppedge_loss.backward()
             optimizer.step()
             if losscount % 50 == 0:
@@ -255,8 +247,6 @@ def train_epoch(
     train_mse = train_mse / max(1, losscount)
     curr_lr = update_learning_rate(lr_scheduler, optimizer)
     return train_mse, curr_lr
-    # log(f"TRAIN at EPOCH {epoch} ENS: train_mse = {train_mse}, curr_lr = {curr_lr}")
-    # wandb.log({"train_mse": train_mse})
 
 
 def eval_epoch(epoch, val_loader, net, device, mse_loss):
