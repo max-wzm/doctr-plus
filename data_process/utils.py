@@ -184,7 +184,7 @@ def tensor_unwarping(warped_imgs, bms, size=(288, 288)):
         warped_imgs, upsampled_grid.transpose(1, 2).transpose(2, 3), align_corners=True
     )
 
-    return unwarped_img
+    return unwarped_img, upsampled_grid
 
 
 def numpy_unwarping(warped_img, bm, size=(288, 288)):
