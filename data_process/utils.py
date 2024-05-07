@@ -170,7 +170,7 @@ def get_unwarp(alb, bm):
     return uw
 
 
-def tensor_unwarping(warped_imgs, bms, size=(288, 288)):
+def tensor_unwarping(warped_imgs, bms, size=(256, 256)):
     """
     Utility function that unwarps an image.
     Unwarp warped_img based on the 2D grid point_positions with a size img_size.
