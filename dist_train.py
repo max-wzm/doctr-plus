@@ -16,6 +16,8 @@ from data_process.uvdoc_dataset import UVDocDataset
 from network.core_net import GeoTr
 from network.netloss import LocalLoss, WarperUtil
 from torch.cuda.amp import GradScaler as GradScaler
+
+from networks.paperedge import LocalWarper
 os.environ["WANDB_API_KEY"] = "7974567f16cc72e73931e4bfb12c157156ab7109"
 gamma_w = 0.0
 
@@ -154,6 +156,8 @@ def train_epoch(
             img_uv, img_uv_dw, bm = batch
 
         # train with 3d data
+        _, c, h, w = img_uv.shape
+        assert (c, h, w) == (3, 256, 256)
         img_uv_c = img_uv.to(device, non_blocking=True)
         img_uv_dw_c = img_uv_dw.to(device, non_blocking=True)
         bm_c = bm.to(device, non_blocking=True)
@@ -162,14 +166,12 @@ def train_epoch(
         # net output size is (b, 2, 288, 288)
         # with autocast():
         pred_bm = net(img_uv_c)
-        pred_bm = ((pred_bm / 288.0) - 0.5) * 2
         pred_img_dw = tensor_unwarping(img_uv_c, pred_bm)
 
         if ppedge_enabled:
             perturb_fm, perturb_bm = warper_util.perturb_warp(pred_bm.size(0))
             pertur_img = tensor_unwarping(img_uv_c, perturb_fm)
             pred_perturb_bm = net(pertur_img.detach())
-            pred_perturb_bm = ((pred_perturb_bm / 288.0) - 0.5) * 2
 
         optimizer.zero_grad(set_to_none=True)
 
@@ -213,14 +215,11 @@ def train_epoch(
             net.zero_grad()
             # with autocast():
             pred_bm = net(img_qb_c)
-            pred_bm = ((pred_bm / 288.0) - 0.5) * 2
             pred_img_dw = tensor_unwarping(img_qb_c, pred_bm)
 
             perturb_fm, perturb_bm = warper_util.perturb_warp(pred_bm.size(0))
             pertur_img = tensor_unwarping(img_qb_c, perturb_fm)
             pred_perturb_bm = net(pertur_img.detach())
-            pred_perturb_bm = ((pred_perturb_bm / 288.0) - 0.5) * 2
-
             ppedge_loss = beta_w * local_loss.warp_diff_loss(
                 pred_bm, pred_perturb_bm, perturb_fm.detach(), perturb_bm.detach()
             )
@@ -259,8 +258,6 @@ def eval_epoch(epoch, val_loader, net, device, mse_loss):
             img_dw = img_dw.to(device)
 
             pred_bm = net(img)
-            if pred_bm.max() > 2:
-                pred_bm = ((pred_bm / 288.0) - 0.5) * 2
             pred_img_dw = tensor_unwarping(img, pred_bm)
 
             loss_img_val = mse_loss(img_dw, pred_img_dw)
@@ -307,7 +304,7 @@ def basic_worker(args):
     warper_util = WarperUtil(64).to(device)
 
     train_loader, val_loader, train_sampler, val_sampler = setup_data(args)
-    net = GeoTr().to(device)
+    net = LocalWarper().to(device)
     optimizer = torch.optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.999))
     net = torch.nn.SyncBatchNorm.convert_sync_batchnorm(net)
     net = torch.nn.parallel.DistributedDataParallel(
