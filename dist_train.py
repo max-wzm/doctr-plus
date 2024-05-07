@@ -166,7 +166,7 @@ def train_epoch(
         # net output size is (b, 2, 288, 288)
         # with autocast():
         pred_bm = net(img_uv_c)
-        pred_img_dw = tensor_unwarping(img_uv_c, pred_bm)
+        pred_img_dw, pred_bm = tensor_unwarping(img_uv_c, pred_bm, (256, 256))
 
         if ppedge_enabled:
             perturb_fm, perturb_bm = warper_util.perturb_warp(pred_bm.size(0))
@@ -258,7 +258,7 @@ def eval_epoch(epoch, val_loader, net, device, mse_loss):
             img_dw = img_dw.to(device)
 
             pred_bm = net(img)
-            pred_img_dw = tensor_unwarping(img, pred_bm)
+            pred_img_dw, pred_bm = tensor_unwarping(img, pred_bm, (256, 256))
 
             loss_img_val = mse_loss(img_dw, pred_img_dw)
             mse_loss_val += float(loss_img_val)
