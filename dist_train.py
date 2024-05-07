@@ -173,17 +173,18 @@ def train_epoch(
 
         optimizer.zero_grad(set_to_none=True)
 
-        mask = torch.logical_and(pred_img_dw, img_uv_dw_c)
-        recon_loss = l1_loss(mask * pred_img_dw, mask * img_uv_dw_c) if recon_enabled else 0
-        # recon_loss = 0
+        # mask = torch.logical_and(pred_img_dw, img_uv_dw_c)
+        # recon_loss = l1_loss(mask * pred_img_dw, mask * img_uv_dw_c) if recon_enabled else 0
+        recon_loss = 0
         bm_loss = l1_loss(pred_bm, bm_c)
-        ppedge_loss = (
-            local_loss.warp_diff_loss(
-                pred_bm, pred_perturb_bm, perturb_fm.detach(), perturb_bm.detach()
-            )
-            if ppedge_enabled
-            else 0
-        )
+        # ppedge_loss = (
+        #     local_loss.warp_diff_loss(
+        #         pred_bm, pred_perturb_bm, perturb_fm.detach(), perturb_bm.detach()
+        #     )
+        #     if ppedge_enabled
+        #     else 0
+        # )
+        ppedge_loss = 0
         net_loss = alpha_w * bm_loss + gamma_w * recon_loss + beta_w * ppedge_loss
         net_loss.backward()
         optimizer.step()
