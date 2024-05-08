@@ -22,7 +22,7 @@ def trigger(prob):
 
 def get_bound_crop():
     bound = (0, 448, 0, 448)
-    if trigger(0.2):
+    if trigger(0.4):
         return bound
 
     h, w = randint(2, 3), randint(2, 3)

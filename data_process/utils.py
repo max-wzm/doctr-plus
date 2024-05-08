@@ -126,10 +126,10 @@ def crop_image_tight(img, grid2D, cropped_box):
     miny = np.floor(np.amin(grid2D[:, :, 1])).astype(int)
     maxy = np.ceil(np.amax(grid2D[:, :, 1])).astype(int)
 
-    top = max(0, miny + random.randint(0, 50))
-    bot = min(448, maxy + random.randint(-50, 0))
-    left = max(0, minx + random.randint(0, 50))
-    right = min(448, maxx + random.randint(-50, 0))
+    top = max(0, miny + random.randint(0, 30))
+    bot = min(448, maxy + random.randint(-30, 0))
+    left = max(0, minx + random.randint(0, 30))
+    right = min(448, maxx + random.randint(-30, 0))
     return (top, bot, left, right)
 
 
